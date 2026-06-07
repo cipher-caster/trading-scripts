@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trader Mayne SMC — Visual Guide</title>
+<style>
+  :root{
+    --bg:#0e1117; --panel:#161b22; --panel2:#1c2230; --fg:#e6edf3; --muted:#8b949e;
+    --border:#30363d; --accent:#58a6ff;
+    --bull:#26a69a; --bear:#ef5350;
+    --fvg-bull:#3b82f6; --fvg-bear:#a855f7;
+    --ob-bull:#22c55e; --ob-bear:#ef4444;
+    --eq:#f59e0b; --level:#9ca3af; --premium:#ef4444; --discount:#22c55e;
+    --buy:#22c55e; --sell:#ef4444; --mss:#f59e0b;
+  }
+  html[data-theme="light"]{
+    --bg:#ffffff; --panel:#f6f8fa; --panel2:#eef1f5; --fg:#1f2328; --muted:#57606a;
+    --border:#d0d7de; --accent:#0969da;
+    --bull:#0e8a7d; --bear:#cf3a37;
+    --level:#6b7280;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9em;
+    background:var(--panel2); padding:1px 5px; border-radius:4px}
+
+  .layout{display:flex; align-items:flex-start; max-width:1180px; margin:0 auto}
+
+  /* sidebar */
+  nav{
+    position:sticky; top:0; width:240px; flex:0 0 240px; height:100vh; overflow-y:auto;
+    padding:22px 14px 40px; border-right:1px solid var(--border); background:var(--panel);
+  }
+  nav h1{font-size:15px; margin:0 0 2px; letter-spacing:.2px}
+  nav .sub{color:var(--muted); font-size:12px; margin-bottom:16px}
+  nav a{display:block; color:var(--muted); padding:5px 10px; border-radius:6px;
+    font-size:13.5px; border-left:2px solid transparent}
+  nav a:hover{color:var(--fg); text-decoration:none; background:var(--panel2)}
+  nav a.active{color:var(--fg); background:var(--panel2); border-left-color:var(--accent)}
+  .themebtn{margin-top:18px; width:100%; cursor:pointer; background:var(--panel2);
+    color:var(--fg); border:1px solid var(--border); border-radius:7px; padding:7px;
+    font-size:13px}
+  .themebtn:hover{border-color:var(--accent)}
+
+  /* content */
+  main{flex:1 1 auto; min-width:0; padding:34px 42px 120px; max-width:880px}
+  section{padding-top:18px; margin-bottom:34px; scroll-margin-top:14px}
+  h2{font-size:24px; margin:8px 0 4px; padding-bottom:8px; border-bottom:1px solid var(--border)}
+  h3{font-size:17px; margin:26px 0 6px}
+  h4{font-size:14.5px; margin:18px 0 4px; color:var(--fg)}
+  p{margin:8px 0}
+  .lead{color:var(--muted)}
+  .muted{color:var(--muted)}
+  ul,ol{margin:8px 0; padding-left:22px}
+  li{margin:3px 0}
+
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin:14px 0}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+
+  .chart{background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px 6px; margin:10px 0}
+  .chart svg{display:block; width:100%; height:auto; max-width:660px; margin:0 auto}
+  .cap{color:var(--muted); font-size:13px; margin:2px 4px 6px; text-align:center}
+
+  details{background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    padding:2px 14px; margin:10px 0}
+  details[open]{padding-bottom:10px}
+  summary{cursor:pointer; padding:9px 0; font-weight:600; font-size:14px; list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸"; color:var(--accent); margin-right:8px; font-size:12px}
+  details[open] summary::before{content:"▾"}
+
+  table{border-collapse:collapse; width:100%; margin:12px 0; font-size:13.5px}
+  th,td{border:1px solid var(--border); padding:7px 10px; text-align:left; vertical-align:top}
+  th{background:var(--panel2); font-weight:600}
+  tr:nth-child(even) td{background:var(--panel)}
+
+  .legend{display:flex; flex-wrap:wrap; gap:8px 16px; font-size:12.5px; margin:8px 0}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .sw{width:13px; height:13px; border-radius:3px; display:inline-block}
+
+  .pill{display:inline-block; font-size:11.5px; padding:1px 8px; border-radius:20px;
+    border:1px solid var(--border); color:var(--muted); margin-left:8px}
+
+  /* SVG element styling (themeable) */
+  .cndl-up{fill:var(--bull); stroke:var(--bull)}
+  .cndl-dn{fill:var(--bear); stroke:var(--bear)}
+  .cndl-flat{fill:var(--muted); stroke:var(--muted)}
+  .wick{stroke-width:1.4}
+  .svg-txt{fill:var(--fg); font-size:11px; font-family:inherit}
+  .svg-txt.r{text-anchor:start}
+  .svg-txt.c{text-anchor:middle}
+  .lvl{stroke:var(--level); stroke-width:1.2; stroke-dasharray:4 3}
+  .lvl-eq{stroke:var(--eq); stroke-width:1.3; stroke-dasharray:5 3}
+  .lvl-lbl{fill:var(--muted)}
+  .z-fvg-bull{fill:var(--fvg-bull); stroke:var(--fvg-bull)}
+  .z-fvg-bear{fill:var(--fvg-bear); stroke:var(--fvg-bear)}
+  .z-ob-bull{fill:var(--ob-bull); stroke:var(--ob-bull)}
+  .z-ob-bear{fill:var(--ob-bear); stroke:var(--ob-bear)}
+  .z-prem{fill:var(--premium); stroke:none}
+  .z-disc{fill:var(--discount); stroke:none}
+  .z-gen{fill:var(--level); stroke:var(--level)}
+  .zone-rect{fill-opacity:.14; stroke-width:1; stroke-dasharray:3 2}
+  .half-rect{fill-opacity:.07; stroke:none}
+  .tag{font-size:10.5px; font-weight:600}
+  .tag-buy{fill:var(--buy)} .tag-sell{fill:var(--sell)} .tag-mss{fill:var(--mss)}
+  .tag-hh,.tag-hl{fill:var(--muted)}
+  .dot-buy{fill:var(--buy)} .dot-sell{fill:var(--sell)}
+  [data-tip]{cursor:help}
+
+  #tip{position:fixed; z-index:50; max-width:240px; background:#000; color:#fff;
+    border:1px solid var(--border); border-radius:6px; padding:6px 9px; font-size:12px;
+    line-height:1.4; pointer-events:none; opacity:0; transition:opacity .08s}
+  html[data-theme="light"] #tip{background:#1f2328}
+
+  footer{color:var(--muted); font-size:12.5px; border-top:1px solid var(--border);
+    margin-top:40px; padding-top:16px}
+
+  /* indicator zone-table mock */
+  .zt{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; max-width:430px;
+    border:1px solid var(--border); border-radius:6px; overflow:hidden; margin:12px 0}
+  .zt div{display:grid; grid-template-columns:1.1fr 2fr 1.2fr 1fr; border-top:1px solid var(--border)}
+  .zt div:first-child{border-top:none}
+  .zt span{padding:5px 8px; border-left:1px solid var(--border)}
+  .zt span:first-child{border-left:none}
+  .zt .hd{background:var(--accent); color:#fff}
+  .zt .hsell{background:var(--bear); color:#fff}
+  .zt .hbuy{background:var(--bull); color:#fff}
+  .zt .col{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <h1>Trader Mayne SMC</h1>
+    <div class="sub">Visual guide · candles &amp; how to read them</div>
+    <a href="#intro">0 · Mental model</a>
+    <a href="#structure">1 · Market structure</a>
+    <a href="#liquidity">2 · Liquidity</a>
+    <a href="#range">3 · Dealing range</a>
+    <a href="#bias">4 · HTF bias</a>
+    <a href="#poi">5 · Entries (OB/FVG)</a>
+    <a href="#frameworks">6 · Frameworks</a>
+    <a href="#workflow">7 · Workflow</a>
+    <a href="#reference">8 · Quick reference</a>
+    <a href="#indicator">9 · Reading the indicator</a>
+    <button class="themebtn" id="themebtn">Toggle light / dark</button>
+  </nav>
+
+  <main>
+    <section id="intro">
+      <h2>Reading this guide</h2>
+      <p class="lead">A visual companion to the Trader Mayne "Whiteboard Series." Every concept is
+      drawn as schematic candles so you can recognise it on a real chart. The diagram colours match
+      the Pine indicator in this folder, so what you see here is what prints on your TradingView
+      chart.</p>
+
+      <div class="legend card">
+        <span><i class="sw" style="background:var(--bull)"></i> bullish candle</span>
+        <span><i class="sw" style="background:var(--bear)"></i> bearish candle</span>
+        <span><i class="sw" style="background:var(--fvg-bull)"></i> bullish FVG</span>
+        <span><i class="sw" style="background:var(--fvg-bear)"></i> bearish FVG</span>
+        <span><i class="sw" style="background:var(--ob-bull)"></i> bullish OB</span>
+        <span><i class="sw" style="background:var(--ob-bear)"></i> bearish OB</span>
+        <span><i class="sw" style="background:var(--eq)"></i> equilibrium 50%</span>
+        <span><i class="sw" style="background:var(--level)"></i> swing / liquidity level</span>
+      </div>
+
+      <h3>The five core ideas</h3>
+      <ol>
+        <li><b>Think like the institution.</b> You are the big player who must fill large orders.
+          You can't fill size at market without moving price against yourself, so you <i>engineer</i>
+          liquidity: drive price into resting orders, fill against them, then make the real move.</li>
+        <li><b>Price moves from liquidity to liquidity.</b> The market ping-pongs between buy-side
+          (above) and sell-side (below) liquidity. If you can't point at where price is going and
+          why, you don't have a setup.</li>
+        <li><b>Top-down, always.</b> Minimum two timeframes. The HTF gives bias / structure / points
+          of interest; the LTF gives entries, stops, targets. Never trade off the LTF alone.</li>
+        <li><b>Price is fractal (the Russian doll).</b> Inside a weekly range is a daily range,
+          inside that an hourly range. The best trades are where multiple timeframes align.</li>
+        <li><b>Markets seek efficiency; asymmetry pays.</b> Inefficient one-directional moves (gaps)
+          get rebalanced; obvious stops get hunted. Trade for asymmetric reward-to-risk so the win
+          rate you need stays low.</li>
+      </ol>
+    </section>
+
+    <section id="structure">
+      <h2>1 · Market structure <span class="pill">the foundation</span></h2>
+      <p class="lead">Everything is built on this. If you can't read structure cleanly, the rest
+      falls apart. A swing is just three candles; a trend is a sequence of them.</p>
+
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="swing-high"></svg></div>
+          <div class="cap">Swing high — middle candle's high is the highest, lower candle each side.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="swing-low"></svg></div>
+          <div class="cap">Swing low — middle candle's low is the lowest, higher candle each side.</div>
+        </div>
+      </div>
+      <p class="muted">Mayne uses a <b>3-candle swing</b>. Swings are visual — the skeleton of price.
+      If a swing isn't obvious, it probably isn't significant.</p>
+
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="uptrend"></svg></div>
+          <div class="cap">Uptrend = higher highs (HH) + higher lows (HL).</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="downtrend"></svg></div>
+          <div class="cap">Downtrend = lower highs (LH) + lower lows (LL).</div>
+        </div>
+      </div>
+      <div class="chart"><svg data-diagram="range"></svg></div>
+      <div class="cap">Range = no clear trend, often equal highs / equal lows. If you can't tell
+        up or down, it's a range. <i>Market structure = trend = direction = bias.</i></div>
+
+      <h3>Break vs shift</h3>
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="msb-up"></svg></div>
+          <div class="cap"><b>MSB</b> (continuation) — close <i>through</i> the prior high → assume
+            the uptrend continues.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="mss-up"></svg></div>
+          <div class="cap"><b>MSS</b> (potential reversal) — first break <i>against</i> the trend
+            (here, closing back above the last lower high).</div>
+        </div>
+      </div>
+      <details>
+        <summary>Rules — MSB vs MSS</summary>
+        <ul>
+          <li><b>MSB = continuation.</b> Uptrend: price <b>closes through</b> the prior higher high.
+            Downtrend: closes through the prior lower low. Requires a <b>close</b>, not just a wick —
+            a wick-through that closes back inside is a liquidity sweep, not a break.</li>
+          <li><b>MSS = potential reversal.</b> Uptrend: price breaks a <b>higher low</b>. Downtrend:
+            breaks a <b>lower high</b>. "Might" reverse — full reversal is confirmed only when
+            structure then breaks the other way (MSS → LH → MSB down, or MSS → HL → MSB up).</li>
+        </ul>
+      </details>
+
+      <h3>Timeframe congruence — the key skill</h3>
+      <div class="chart"><svg data-diagram="congruence"></svg></div>
+      <div class="cap">A pullback on the HTF (forming a HL) can be a <i>full downtrend</i> on the LTF.
+        The trade is the moment the LTF syncs back up: MSS then MSB in the HTF direction.</div>
+      <p class="muted">Trading the LTF in isolation gets you short right before the HTF reasserts and
+        price rips. Wait for the re-sync.</p>
+    </section>
+
+    <section id="liquidity">
+      <h2>2 · Liquidity <span class="pill">why price moves</span></h2>
+      <p class="lead">For this system, <b>liquidity = resting orders</b> — mostly retail stop losses
+      plus breakout orders. They are the fuel smart money uses to fill positions.</p>
+
+      <div class="chart"><svg data-diagram="bsl-ssl"></svg></div>
+      <div class="cap"><b>BSL</b> (buy-side liquidity) rests <i>above</i> — short stops + breakout
+        longs; smart money sells into it. <b>SSL</b> rests <i>below</i> — long stops + breakdown
+        shorts; smart money buys it.</div>
+      <p class="muted">Counter-intuition: to get <b>long</b>, price is often driven <b>down</b> first
+        to trigger sells (SSL) the institution buys; to get <b>short</b>, driven <b>up</b> into BSL.</p>
+
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="sweep"></svg></div>
+          <div class="cap">Break-and-close sweep — runs the level, <b>closes back</b>, then displaces.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="sfp"></svg></div>
+          <div class="cap">SFP — a <b>wick</b> through a swing point that closes back inside, then displaces.</div>
+        </div>
+      </div>
+      <details>
+        <summary>Rules — confirming a sweep</summary>
+        <p>Two ingredients are mandatory, or it's a real breakout, not a sweep:</p>
+        <ol>
+          <li>Price runs through the level, then gets <b>rejected</b> (closes back on the original side).</li>
+          <li><b>Displacement</b> follows — a strong move, often causing an MSS the other way.</li>
+        </ol>
+        <p class="muted">If price breaks and <i>hovers</i> without reclaiming, treat it as a genuine
+          breakout. News (CPI, FOMC, earnings) is just the cover — "it was coming for that liquidity
+          anyway."</p>
+      </details>
+
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="irl-erl"></svg></div>
+          <div class="cap"><b>ERL</b> (swing high/low) = targets. <b>IRL</b> (minor swings, OBs, FVGs)
+            = entries. Cycle: take ERL → target IRL → take IRL → target ERL.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="eqh"></svg></div>
+          <div class="cap">Equal highs / lows — liquidity rests just beyond. Prime sweep targets.</div>
+        </div>
+      </div>
+      <p class="muted">A <b>HTF sweep</b> is significant and the move out of it should be powerful. A
+        LTF counter-trend sweep against a strong HTF trend carries less weight — wait for the realign.</p>
+    </section>
+
+    <section id="range">
+      <h2>3 · Dealing range <span class="pill">the working box</span></h2>
+      <p class="lead">At any moment price sits inside a range, heading for liquidity above the high
+      or below the low. The range tells you which is likelier, where to enter, and how far it can go.</p>
+
+      <div class="chart"><svg data-diagram="range-build"></svg></div>
+      <div class="cap">Mark the significant swing high → swing low, draw the 50% (equilibrium).
+        <b>Discount</b> below = look for longs. <b>Premium</b> above = look for shorts.
+        <b>"No diddle in the middle"</b> — skip trades at equilibrium.</div>
+      <details>
+        <summary>Rules — building &amp; using the range</summary>
+        <ul>
+          <li>Mark the <b>significant</b> SH and SL (most recent + visually obvious; discretion allowed).</li>
+          <li>Draw the <b>50%</b> with the Fib tool (low→high) so 0/50/100 auto-plot.</li>
+          <li><b>Discount</b> = below 50% → buy low. <b>Premium</b> = above 50% → sell high.
+            <b>Equilibrium</b> = no trade.</li>
+          <li>BSL sits above the high (external), SSL below the low (external).</li>
+          <li>Bullish range = swing low first then high; bearish = swing high first then low.</li>
+          <li><b>The range resets every MSB</b> — each new leg becomes a new dealing range; redraw.</li>
+        </ul>
+      </details>
+
+      <div class="chart"><svg data-diagram="nested"></svg></div>
+      <div class="cap">Nested ranges (Russian doll). Highest-probability long = hourly <i>and</i>
+        daily <i>and</i> weekly all in discount. Zooming into the LTF range gives a far tighter stop
+        and better RR than entering off the HTF.</div>
+      <p class="muted"><b>IRL = entries, ERL = targets.</b> Don't close at internal liquidity still
+        inside the range, then watch price run to the real external target without you.</p>
+    </section>
+
+    <section id="bias">
+      <h2>4 · High timeframe bias <span class="pill">the master filter</span></h2>
+      <p class="lead">The single most important filter — it answers one question: <b>long or short?</b>
+      Establish it before looking for any entry. The highest timeframe is your boss; whatever it
+      says goes.</p>
+
+      <h3>The hierarchy (top-down)</h3>
+      <table>
+        <tr><th>Timeframe</th><th>Job</th></tr>
+        <tr><td>Weekly</td><td>Macro direction</td></tr>
+        <tr><td>Daily</td><td>Major swings / where we are in the trend</td></tr>
+        <tr><td>H4</td><td>Local trend (last few days–2 weeks)</td></tr>
+        <tr><td>H1 / M15</td><td>Entry timeframes</td></tr>
+      </table>
+      <p>If weekly + daily are bearish, the best M15 trade is a <b>short</b>, even amid a M15 uptrend.
+        Bias proliferates top-down.</p>
+
+      <h3>The two execution pairs Mayne names</h3>
+      <p>Read bias on the higher chart, take the entry on the lower:</p>
+      <table>
+        <tr><th>HTF (read bias)</th><th>LTF (take the entry)</th><th>Use when</th></tr>
+        <tr><td>H12</td><td>H1</td><td>Standard / swing pace</td></tr>
+        <tr><td>H4</td><td>M15</td><td>Faster, smaller setups</td></tr>
+      </table>
+      <p class="muted">Don't jump Weekly straight to an hourly entry — step down through the hierarchy.</p>
+
+      <h3>The 4-point checklist — run before EVERY trade</h3>
+      <div class="card">
+        <ol>
+          <li><b>HTF market structure</b> — bull or bear? Where was the last MSB? What are weekly + daily doing?</li>
+          <li><b>Dealing range</b> — premium, discount, or equilibrium? (Longs only in discount;
+            shorts only in premium; nothing at EQ.)</li>
+          <li><b>Liquidity</b> — what did we just take? What's the next pool, and does the <b>RR</b> to
+            it make sense (asymmetric, ≥ 2:1)?</li>
+          <li><b>Entry model</b> — is there a clean POI (order block, breaker, or FVG)?</li>
+        </ol>
+        <p class="muted" style="margin-bottom:0"><b>All four boxes or no trade.</b> One fail (e.g. you're
+          in premium not discount) = skip it, even if it would have worked. Re-establish bias on cadence
+          — whenever the HTF shifts, start over.</p>
+      </div>
+    </section>
+
+    <section id="poi">
+      <h2>5 · Entries: order blocks, breakers, FVGs <span class="pill">points of interest</span></h2>
+      <p class="lead">The actual entry zones. All three live in the same areas and the best setups
+      overlap them. Context from §§1–4 is what separates a high- from low-probability POI — a POI in
+      isolation is just a pattern.</p>
+
+      <h3>Fair Value Gap (FVG)</h3>
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="fvg-bull"></svg></div>
+          <div class="cap">Bullish FVG — gap from high of candle 1 to low of candle 3, left by a big
+            green displacement candle. Price returns to fill it.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="fvg-bear"></svg></div>
+          <div class="cap">Bearish FVG — gap from low of candle 1 to high of candle 3, left by a big
+            red displacement candle.</div>
+        </div>
+      </div>
+      <details>
+        <summary>Rules — trading an FVG</summary>
+        <ul>
+          <li><b>Entry:</b> the gap's <b>50% and into the zone</b> — bullish: upper 50% (or the top
+            edge); bearish: lower 50%. Ladder ("spray") across that half.</li>
+          <li><b>Stop:</b> tight = just beyond the far edge of the gap (best RR); loose = beyond
+            <b>candle 1</b> of the pattern (fewer stop-outs, worse RR).</li>
+          <li><b>Target:</b> external range liquidity on the opposite side.</li>
+          <li>Higher-probability when: in the correct half, formed after sweeping liquidity, aligned
+            with HTF trend, bigger displacement candle. Not all FVGs fill, and not all that fill hold.</li>
+        </ul>
+      </details>
+
+      <h3>Order Block (OB)</h3>
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="ob-bull"></svg></div>
+          <div class="cap">Bullish OB — the last <b>down</b> candle before a strong up-move (ideally
+            one that breaks structure). Demand zone; look for longs on retest.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="ob-bear"></svg></div>
+          <div class="cap">Bearish OB — the last <b>up</b> candle before a strong down-move. Supply
+            zone; look for shorts on retest.</div>
+        </div>
+      </div>
+      <details>
+        <summary>Rules — trading an OB</summary>
+        <ul>
+          <li><b>Entry:</b> from the open/top of the OB down to its <b>50% (mean threshold)</b> for a
+            bullish OB; bottom up to 50% for bearish. A strong OB should not close beyond its 50%.</li>
+          <li><b>Stop:</b> just beyond the full OB (+ room for spread). Safer because a good OB already
+            ran liquidity.</li>
+          <li><b>Target:</b> external range liquidity (BSL above for longs, SSL below for shorts).</li>
+          <li>Higher-probability when: large displacement off it (leaves an FVG), the move breaks
+            structure, it took liquidity first, bigger candle(s). OBs trade <b>with</b> the trend.</li>
+        </ul>
+      </details>
+
+      <h3>Breaker &amp; the "unicorn" overlap</h3>
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="breaker"></svg></div>
+          <div class="cap">Breaker = a <b>failed OB</b>, i.e. an S/R flip. A failed bearish OB that
+            price blows through becomes <b>support</b> → longs. Most common at reversals.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="unicorn"></svg></div>
+          <div class="cap">When OB + FVG (+ breaker) <b>stack</b>, that's the highest-probability POI
+            in the system. Alarm bells — full attention.</div>
+        </div>
+      </div>
+
+      <h3>OB vs FVG — which do you use? <span class="pill">Ep8</span></h3>
+      <p>A good OB <i>creates</i> an FVG, so they sit in the same area (OB just below, FVG just above
+        in a bull leg). The recurring question: will price reverse at the FVG, or trade down to the OB?
+        Mayne's honest answer is <b>"it depends"</b> — run five filters, and the last is the real decider.</p>
+      <div class="card">
+        <ol>
+          <li><b>Location (premium/discount)</b> — first and most important. Only POIs on the correct
+            side; throws out most candidates.</li>
+          <li><b>Context</b> — aggressive trend → favour <b>FVGs</b> (shallow pullbacks); range →
+            favour <b>OBs</b>; reversal → <b>OBs + breakers</b>.</li>
+          <li><b>Quality</b> — prefer the cleaner, more obvious POI. Tiny ambiguous candle = probably
+            not the one.</li>
+          <li><b>Risk-to-reward</b> — if the FVG doesn't give ≥ 2R, wait for the deeper OB or accept
+            you may miss the trade.</li>
+          <li><b>Low timeframe — the actual answer.</b> Zoom in. Whichever POI is where the LTF flips
+            from downtrend to uptrend (MSS → MSB, re-syncing with the HTF) is the one that holds. If the
+            OB also fails to flip, that's a likely trend change — stand aside.</li>
+        </ol>
+        <p class="muted" style="margin-bottom:0"><b>Mayne's own practice:</b> HTF POIs = OBs and
+          breakers; LTF entries = breakers mainly. FVGs shine on micro timeframes (15m → 5m) in a clean
+          trend. The real rule is <i>use what works for you</i>; obviousness is the tell.</p>
+      </div>
+    </section>
+
+    <section id="frameworks">
+      <h2>6 · Frameworks</h2>
+
+      <h3>Power of Three (PO3) / AMD</h3>
+      <div class="chart"><svg data-diagram="po3"></svg></div>
+      <div class="cap"><b>Accumulation</b> (sideways build-up) → <b>Manipulation</b> (the fake-out /
+        stop-hunt the wrong way) → <b>Distribution</b> (the real move). Enter on manipulation, take
+        profit in distribution.</div>
+
+      <div class="grid2">
+        <div class="card">
+          <h4>Judas Swing</h4>
+          <p class="muted" style="margin:0">The manipulation arm of AMD — the fake move that betrays
+            you. Often at the session start: price dips below the open to run SSL, then reverses and
+            trends all day.</p>
+        </div>
+        <div class="card">
+          <h4>Kill Zones</h4>
+          <p class="muted" style="margin:0">Timing windows within a session (New York, London, Asia)
+            where high-probability moves cluster. The Judas swing often prints inside a kill zone. You
+            only need to watch price during them.</p>
+        </div>
+        <div class="card">
+          <h4>SMT Divergence</h4>
+          <p class="muted" style="margin:0">Disagreement between two correlated assets (BTC vs ETH;
+            SPX vs NASDAQ). One makes a higher high while the other makes a lower high → the divergence
+            flags one print as likely fake.</p>
+        </div>
+        <div class="card">
+          <h4>Risk-to-Reward</h4>
+          <table style="margin:4px 0 0">
+            <tr><th>R:R</th><th>Break-even win rate</th></tr>
+            <tr><td>1 : 1</td><td>50%</td></tr>
+            <tr><td>2 : 1</td><td>33%</td></tr>
+            <tr><td>3 : 1</td><td>25%</td></tr>
+          </table>
+        </div>
+      </div>
+      <p class="muted">Mayne wins roughly high-30s to mid-40s % but is profitable because trades are
+        2:1 and 3:1. Map entry / stop / target before taking a trade and require ≥ 2:1.</p>
+    </section>
+
+    <section id="workflow">
+      <h2>7 · The complete workflow <span class="pill">repeatable process</span></h2>
+      <p class="lead">The end-to-end routine, run top-down every time.</p>
+      <ol>
+        <li><b>HTF bias (Weekly → Daily).</b> Read structure on the weekly (HH/HL or LH/LL?), locate
+          the last MSB, drop to the daily (expect it to look counter-trend during pullbacks). Decide:
+          <b>long or short only.</b></li>
+        <li><b>Dealing range + premium/discount.</b> Draw the significant swing high→low (Fib for 50%).
+          Longs need discount; shorts need premium; never equilibrium.</li>
+        <li><b>Liquidity read.</b> What did price just take? Name the <b>next</b> pool (your target —
+          always external range liquidity on the far side). Check the RR is ≥ 2:1. If not, stop here.</li>
+        <li><b>Drop to the LTF and wait for the re-sync.</b> Inside the HTF discount/premium zone, watch
+          the counter-trend LTF shift: MSS then MSB in the HTF direction. That's congruence.</li>
+        <li><b>Entry model (OB / breaker / FVG).</b> Entry at the 50% mean threshold (OB/breaker) or
+          gap 50% (FVG); stop tight or loose; target the external liquidity from step 3.</li>
+        <li><b>Manage and re-run.</b> Don't close early at internal liquidity. Re-establish HTF bias on
+          cadence; restart whenever the HTF structure shifts.</li>
+      </ol>
+    </section>
+
+    <section id="reference">
+      <h2>8 · Quick reference</h2>
+
+      <h3>Acronyms</h3>
+      <table>
+        <tr><th>Short</th><th>Meaning</th></tr>
+        <tr><td>SH / SL</td><td>Swing high / swing low</td></tr>
+        <tr><td>HH / HL / LH / LL</td><td>Higher high / higher low / lower high / lower low</td></tr>
+        <tr><td>MS / MSB / MSS</td><td>Market structure / break (continuation) / shift (reversal)</td></tr>
+        <tr><td>HTF / LTF</td><td>High timeframe / low timeframe</td></tr>
+        <tr><td>BSL / SSL</td><td>Buy-side liquidity (above) / sell-side liquidity (below)</td></tr>
+        <tr><td>ERL / IRL</td><td>External range liquidity (targets) / internal (entries)</td></tr>
+        <tr><td>EQH / EQL / EQ</td><td>Equal highs / equal lows / equilibrium (50%)</td></tr>
+        <tr><td>OB / Breaker / FVG</td><td>Order block / failed OB (S/R flip) / fair value gap</td></tr>
+        <tr><td>OTE</td><td>Optimal trade entry (0.618 / 0.705 / 0.786 Fib)</td></tr>
+        <tr><td>PO3 / AMD</td><td>Power of three / accumulation–manipulation–distribution</td></tr>
+        <tr><td>SMT / RR</td><td>Smart money divergence / reward-to-risk</td></tr>
+      </table>
+
+      <h3>Entry / stop / target cheat sheet</h3>
+      <table>
+        <tr><th>POI</th><th>Entry</th><th>Stop (tight / loose)</th><th>Target</th></tr>
+        <tr><td>Bullish FVG</td><td>upper 50% of gap, discount</td><td>beyond gap edge / beyond candle 1</td><td>external BSL</td></tr>
+        <tr><td>Bearish FVG</td><td>lower 50% of gap, premium</td><td>beyond gap edge / above candle 1</td><td>external SSL</td></tr>
+        <tr><td>Bullish OB</td><td>top → 50% mean threshold, discount</td><td>beyond full OB (+room)</td><td>external BSL</td></tr>
+        <tr><td>Bearish OB</td><td>bottom → 50% mean threshold, premium</td><td>beyond full OB (+room)</td><td>external SSL</td></tr>
+        <tr><td>Bullish breaker</td><td>edge → 50%, at reversal</td><td>beyond breaker / beyond sweep low</td><td>external BSL</td></tr>
+        <tr><td>Bearish breaker</td><td>edge → 50%, at reversal</td><td>beyond breaker / beyond sweep high</td><td>external SSL</td></tr>
+      </table>
+
+      <h3>The non-negotiables</h3>
+      <div class="card">
+        <ol style="margin:0">
+          <li>Establish <b>HTF bias first</b>; trade top-down.</li>
+          <li><b>All 4 checklist boxes</b> (structure / range / liquidity / entry) or <b>no trade</b>.</li>
+          <li>Longs in <b>discount</b>, shorts in <b>premium</b>, nothing at <b>equilibrium</b>.</li>
+          <li>A sweep/MSB needs <b>displacement</b> (a close, not just a wick).</li>
+          <li><b>IRL = entries, ERL = targets.</b> Don't close early at internal liquidity.</li>
+          <li>Demand <b>asymmetric RR</b> (≥ 2:1).</li>
+          <li>Context turns a pattern into a setup — a bare OB/FVG/breaker is just a pattern.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="indicator">
+      <h2>9 · Reading the indicator</h2>
+      <p class="lead">The Pine script in this folder (<code>Mayne-SMC-Indicator.pine</code>)
+      mechanically marks the chartable parts of everything above: order blocks, FVGs, bias, the 50%,
+      and BUY/SELL signals. This section ties the theory to what actually prints on your chart.</p>
+
+      <h3>Which timeframe?</h3>
+      <p>The indicator is <b>single-timeframe</b> — it reads bias and fires off whatever chart you
+        open it on. Run it on two charts, top-down: read the <b>BIAS</b> on the higher one (H12 or
+        Weekly), take signals on the lower (H1 or M15). The BIAS row is always the current chart's
+        timeframe — it does not sync HTF for you. That top-down read is the one judgment call Mayne
+        wants you making yourself.</p>
+
+      <h3>What you'll see on the chart</h3>
+      <table>
+        <tr><th>Element</th><th>On by default?</th><th>Meaning</th></tr>
+        <tr><td>"BUY" / "SELL" labels</td><td>yes</td><td>A signal fired. The thing you actually trade off.</td></tr>
+        <tr><td>Blue / purple boxes</td><td>yes</td><td>Fair Value Gaps — blue = bullish, purple = bearish.</td></tr>
+        <tr><td>Green / red boxes</td><td>yes</td><td>Order Blocks — green = bullish demand, red = bearish supply.</td></tr>
+        <tr><td>Dots above/below bars</td><td>yes</td><td>MSB — structure break in the trend direction (continuation).</td></tr>
+        <tr><td>"MSS" labels</td><td>yes</td><td>First break against the trend (potential reversal). Flips the bias.</td></tr>
+        <tr><td>Gray high/low lines</td><td>off</td><td>Dealing range: last swing high (BSL) / swing low (SSL).</td></tr>
+        <tr><td>Orange line</td><td>off</td><td>Equilibrium — the 50%. Above = premium, below = discount.</td></tr>
+        <tr><td>Background tint</td><td>off</td><td>Trend bias on every bar (floods the chart, so off by default).</td></tr>
+      </table>
+      <p class="muted">Zones stop extending once <b>used</b>: the moment price trades into a zone's
+        50% mean threshold it's "mitigated" and its box freezes at that bar, so only still-actionable
+        zones reach the live bar.</p>
+
+      <h3>The zone table (top-right)</h3>
+      <p>Reads off the nearest <b>buy zones below price</b> and <b>sell zones above price</b>, so you
+        can see where price is likely to react without eyeballing the boxes.</p>
+      <div class="zt">
+        <div><span class="hd">BIAS</span><span class="hd">Bullish</span><span class="hd">PRICE</span><span class="hd">42,180</span></div>
+        <div><span class="hd">RANGE</span><span class="hd">Discount</span><span class="hd">EQ</span><span class="hd">41,900</span></div>
+        <div><span class="hsell">SELL ZONES (above)</span><span class="hsell"></span><span class="hsell"></span><span class="hsell"></span></div>
+        <div><span class="col">Type</span><span class="col">Entry (range)</span><span class="col">50%</span><span class="col">Dist</span></div>
+        <div><span>OB</span><span>42,900 – 43,200</span><span>43,050</span><span>1.71%</span></div>
+        <div><span>FVG</span><span>43,400 – 43,560</span><span>43,480</span><span>2.89%</span></div>
+        <div><span class="hbuy">BUY ZONES (below)</span><span class="hbuy"></span><span class="hbuy"></span><span class="hbuy"></span></div>
+        <div><span class="col">Type</span><span class="col">Entry (range)</span><span class="col">50%</span><span class="col">Dist</span></div>
+        <div><span>FVG</span><span>41,650 – 41,790</span><span>41,720</span><span>0.92%</span></div>
+        <div><span>OB</span><span>41,050 – 41,350</span><span>41,200</span><span>1.97%</span></div>
+      </div>
+      <ul>
+        <li><b>Entry (range)</b> — the full zone, bottom – top. Ladder your order across it.</li>
+        <li><b>50%</b> — the mean threshold, the optimal fill and the level the on-chart signal fires at.</li>
+        <li><b>Dist</b> — how far the near edge is from price (how far price must travel to first touch).</li>
+      </ul>
+      <p class="muted">The table lists <i>candidate</i> zones. A zone becomes an actual BUY/SELL signal
+        only when price reaches it <b>and</b> bias + premium/discount agree. Table = the map, labels =
+        the trigger.</p>
+
+      <h3>How a signal fires</h3>
+      <p>A <b>BUY</b> prints only when all three line up on the same bar: (1) bias is bullish,
+        (2) price is in discount, (3) price retests a bullish OB or FVG at its 50% mean threshold.
+        <b>SELL</b> is the mirror. Each zone fires once; a zone deleted when price closes through it.</p>
+
+      <h3>Inputs that matter</h3>
+      <table>
+        <tr><th>Input</th><th>Default</th><th>Raise it to…</th></tr>
+        <tr><td>Swing length</td><td>2</td><td>Catch only bigger, cleaner structure. Use 3–4 on HTF.</td></tr>
+        <tr><td>Marker distance (×ATR)</td><td>0.1</td><td>Push BUY/SELL/MSB markers further from the candle.</td></tr>
+        <tr><td>Displacement ≥ ATR ×</td><td>1.5</td><td>Demand stronger displacement before trusting an FVG/OB.</td></tr>
+        <tr><td>Require correct half</td><td>on</td><td>Enforce buy-low / sell-high.</td></tr>
+        <tr><td>Trigger at zone 50%</td><td>on</td><td>Signal at the midpoint; off = first touch of the edge.</td></tr>
+      </table>
+      <details>
+        <summary>Honest limits — what it does NOT do</summary>
+        <ul>
+          <li><b>Single timeframe only.</b> Keep your real HTF bias on a separate chart; treat a signal
+            that disagrees with the HTF as noise.</li>
+          <li><b>No liquidity-sweep confirmation, no RR gate, no SMT / kill-zone logic.</b> A signal
+            means "a POI is being retested in the right local context" — not "take this trade."</li>
+          <li><b>Confirms with lag (not a bug).</b> Swings need <code>Swing length</code> bars to the
+            right before they confirm, so structure appears a few bars late rather than repainting.</li>
+        </ul>
+      </details>
+    </section>
+
+    <footer>
+      <p><b>Not financial advice</b> — a study/testing aid only. Derived from the free educational
+        series by <a href="https://www.youtube.com/@TraderMayne">Trader Mayne</a>
+        (<a href="https://www.youtube.com/playlist?list=PLKItFyoma4GeQSNjY7LM5qtEgTFUidxYI">Trading
+        Bootcamp playlist</a>). Independent, unofficial fan implementation — not affiliated with or
+        endorsed by Mayne. Faithful to his taught system; watch the original videos for chart-by-chart
+        examples. Part of <a href="https://github.com/cipher-caster/trading-scripts">trading-scripts</a>.</p>
+    </footer>
+  </main>
+</div>
+
+<div id="tip"></div>
+
+<script>
+(function(){
+  "use strict";
+  var SVGNS="http://www.w3.org/2000/svg";
+  function el(tag,attrs,parent){
+    var e=document.createElementNS(SVGNS,tag);
+    for(var k in attrs) e.setAttribute(k,attrs[k]);
+    if(parent) parent.appendChild(e);
+    return e;
+  }
+
+  // ---- candle engine ----------------------------------------------------
+  var W_MARGIN={l:14,r:74,t:16,b:16}, VH=300, SPACING=46, CW=20;
+
+  function bounds(spec){
+    var ps=[];
+    spec.candles.forEach(function(k){ps.push(k[1],k[2]);});
+    (spec.ann||[]).forEach(function(a){
+      ["price","top","bot","y"].forEach(function(f){ if(a[f]!=null) ps.push(a[f]); });
+    });
+    var mn=Math.min.apply(null,ps), mx=Math.max.apply(null,ps);
+    var pad=(mx-mn)*0.14||1;
+    return [mn-pad, mx+pad];
+  }
+
+  function draw(svg, spec){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    var n=spec.candles.length;
+    var VW=W_MARGIN.l+n*SPACING+W_MARGIN.r;
+    svg.setAttribute("viewBox","0 0 "+VW+" "+VH);
+    var b=bounds(spec), mn=b[0], mx=b[1];
+    var plotT=W_MARGIN.t, plotB=VH-W_MARGIN.b;
+    var xc=function(i){return W_MARGIN.l+i*SPACING+SPACING/2;};
+    var y =function(p){return plotT+(mx-p)/(mx-mn)*(plotB-plotT);};
+    var xL=W_MARGIN.l, xR=VW-W_MARGIN.r;
+    var labelX=xR+6;
+
+    // annotations behind candles: zones + halves + levels
+    (spec.ann||[]).forEach(function(a){
+      if(a.t==="zone"){
+        var x0=a.i0!=null?xc(a.i0)-SPACING/2:xL, x1=a.i1!=null?xc(a.i1)+SPACING/2:xR;
+        var yt=y(a.top), yb=y(a.bot);
+        var r=el("rect",{x:x0,y:yt,width:(x1-x0),height:Math.max(yb-yt,2),
+          "class":(a.cls||"z-gen")+" zone-rect"},svg);
+        if(a.tip) r.setAttribute("data-tip",a.tip);
+        if(a.label) el("text",{x:x0+5,y:yt+13,"class":"svg-txt r"},svg).textContent=a.label;
+      } else if(a.t==="half"){
+        var yt2=y(a.top), yb2=y(a.bot);
+        el("rect",{x:xL,y:yt2,width:(xR-xL),height:Math.max(yb2-yt2,2),
+          "class":(a.cls||"z-gen")+" half-rect"},svg);
+        if(a.label) el("text",{x:xL+5,y:(yt2+yb2)/2+4,"class":"svg-txt lvl-lbl"},svg).textContent=a.label;
+      } else if(a.t==="level"){
+        var yy=y(a.price);
+        el("line",{x1:xL,y1:yy,x2:xR,y2:yy,"class":a.cls||"lvl"},svg);
+        if(a.label) el("text",{x:labelX,y:yy+4,"class":"svg-txt r lvl-lbl"},svg).textContent=a.label;
+      }
+    });
+
+    // candles
+    spec.candles.forEach(function(k,i){
+      var o=k[0],h=k[1],l=k[2],c=k[3];
+      var dir=k[4]|| (c>=o?"up":"down");
+      var cls=dir==="up"?"cndl-up":dir==="down"?"cndl-dn":"cndl-flat";
+      var x=xc(i);
+      el("line",{x1:x,y1:y(h),x2:x,y2:y(l),"class":cls+" wick"},svg);
+      var top=Math.max(o,c), bot=Math.min(o,c);
+      el("rect",{x:x-CW/2,y:y(top),width:CW,height:Math.max(y(bot)-y(top),2),
+        "class":cls,rx:1.5},svg);
+    });
+
+    // foreground: tags + dots + brackets
+    (spec.ann||[]).forEach(function(a){
+      if(a.t==="tag"){
+        var x=xc(a.i), yy=a.pos==="below"?y(a.price)+15:y(a.price)-7;
+        var tx=el("text",{x:x,y:yy,"class":"svg-txt c tag "+(a.cls||"")},svg);
+        tx.textContent=a.text;
+        if(a.tip) tx.setAttribute("data-tip",a.tip);
+      } else if(a.t==="dot"){
+        var d=el("circle",{cx:xc(a.i),cy:y(a.price),r:4,"class":a.cls||"dot-buy"},svg);
+        if(a.tip) d.setAttribute("data-tip",a.tip);
+      } else if(a.t==="bracket"){
+        var bx0=xc(a.i0), bx1=xc(a.i1), by=y(a.price);
+        el("line",{x1:bx0,y1:by,x2:bx1,y2:by,stroke:"var(--muted)","stroke-width":1,
+          "stroke-dasharray":"2 2"},svg);
+        if(a.label) el("text",{x:(bx0+bx1)/2,y:by-5,"class":"svg-txt c lvl-lbl"},svg).textContent=a.label;
+      }
+    });
+  }
+
+  // ---- diagram specs ----------------------------------------------------
+  var D={
+    "swing-high":{candles:[[20,40,15,35],[35,60,30,40],[40,45,20,25,"down"]],
+      ann:[{t:"level",price:60,label:"Swing High",cls:"lvl"},
+           {t:"tag",i:1,price:60,text:"highest",cls:"tag-hh"}]},
+    "swing-low":{candles:[[80,85,60,65,"down"],[65,70,40,60],[65,85,63,80]],
+      ann:[{t:"level",price:40,label:"Swing Low",cls:"lvl"},
+           {t:"tag",i:1,price:40,text:"lowest",cls:"tag-hl",pos:"below"}]},
+    "uptrend":{candles:[[10,30,8,28],[28,44,26,42],[42,43,24,26,"down"],[26,30,22,27],
+        [27,64,25,60],[60,62,44,46,"down"],[46,49,43,47],[47,84,45,80]],
+      ann:[{t:"tag",i:1,price:44,text:"HH",cls:"tag-hh"},{t:"tag",i:3,price:22,text:"HL",cls:"tag-hl",pos:"below"},
+           {t:"tag",i:4,price:64,text:"HH",cls:"tag-hh"},{t:"tag",i:6,price:43,text:"HL",cls:"tag-hl",pos:"below"},
+           {t:"tag",i:7,price:84,text:"HH",cls:"tag-hh"}]},
+    "downtrend":{candles:[[90,92,70,72,"down"],[72,74,56,58,"down"],[58,76,57,74],[74,78,52,54,"down"],
+        [54,56,36,38,"down"],[38,54,37,52],[52,55,33,35,"down"],[35,37,16,18,"down"]],
+      ann:[{t:"tag",i:1,price:56,text:"LL",cls:"tag-hl",pos:"below"},{t:"tag",i:2,price:76,text:"LH",cls:"tag-hh"},
+           {t:"tag",i:4,price:36,text:"LL",cls:"tag-hl",pos:"below"},{t:"tag",i:5,price:54,text:"LH",cls:"tag-hh"},
+           {t:"tag",i:7,price:16,text:"LL",cls:"tag-hl",pos:"below"}]},
+    "range":{candles:[[35,58,33,55],[55,60,38,40,"down"],[40,59,38,56],[56,61,36,38,"down"],
+        [38,60,36,57],[57,59,37,39,"down"]],
+      ann:[{t:"level",price:60,label:"EQH",cls:"lvl"},{t:"level",price:36,label:"EQL",cls:"lvl"}]},
+    "msb-up":{candles:[[12,30,10,28],[28,44,26,42],[42,44,26,28,"down"],[28,32,24,30],
+        [30,46,28,44],[44,48,30,32,"down"],[32,68,30,64]],
+      ann:[{t:"level",price:46,label:"prior high",cls:"lvl"},
+           {t:"tag",i:6,price:68,text:"MSB",cls:"tag-buy"},{t:"dot",i:6,price:30,cls:"dot-buy",tip:"Close through the prior high = continuation."}]},
+    "mss-up":{candles:[[88,90,70,72,"down"],[72,74,54,56,"down"],[56,72,55,70],[70,74,40,42,"down"],
+        [42,58,40,56],[56,58,38,40,"down"],[40,78,38,74]],
+      ann:[{t:"level",price:72,label:"last LH",cls:"lvl"},
+           {t:"tag",i:6,price:78,text:"MSS",cls:"tag-mss",tip:"First close back above the lower high = potential reversal."}]},
+    "congruence":{candles:[[78,82,74,80],[80,82,60,62,"down"],[62,64,46,48,"down"],[48,50,34,36,"down"],
+        [36,52,34,50],[50,54,40,42,"down"],[42,80,40,78]],
+      ann:[{t:"half",top:82,bot:34,cls:"z-disc",label:"HTF discount (pullback = a HL forming)"},
+           {t:"bracket",i0:1,i1:3,price:30,label:"LTF: full downtrend"},
+           {t:"tag",i:6,price:80,text:"re-sync ↑",cls:"tag-buy"}]},
+    "bsl-ssl":{candles:[[40,58,38,55],[55,60,40,42,"down"],[42,59,40,56],[56,60,38,40,"down"],[40,58,38,54]],
+      ann:[{t:"level",price:62,label:"BSL (above)",cls:"lvl"},{t:"level",price:36,label:"SSL (below)",cls:"lvl"}]},
+    "sweep":{candles:[[20,34,18,32],[32,46,30,44],[44,66,42,52,"down"],[52,54,18,22,"down"],[22,24,8,12,"down"]],
+      ann:[{t:"level",price:60,label:"swing high",cls:"lvl"},
+           {t:"tag",i:2,price:66,text:"run + close back",cls:"tag-sell",tip:"Wicks above, closes back below, then displaces down."},
+           {t:"tag",i:3,price:18,text:"displacement",cls:"tag-sell",pos:"below"}]},
+    "sfp":{candles:[[60,62,46,48,"down"],[48,50,42,46,"down"],[46,48,28,44],[44,60,42,58],[58,74,56,72]],
+      ann:[{t:"level",price:40,label:"swing low",cls:"lvl"},
+           {t:"tag",i:2,price:28,text:"wick through, close back",cls:"tag-buy",pos:"below",tip:"A wick takes the low, candle closes back inside, then displaces up."}]},
+    "irl-erl":{candles:[[34,40,20,38],[38,52,36,50],[50,66,48,64],[64,68,50,52,"down"],[52,54,40,50],[50,70,48,68]],
+      ann:[{t:"level",price:72,label:"ERL (target)",cls:"lvl"},{t:"level",price:18,label:"ERL (target)",cls:"lvl"},
+           {t:"zone",top:54,bot:46,cls:"z-ob-bull",label:"IRL (entry)",i0:3,i1:5,tip:"Internal liquidity — OB/FVG inside the range. Where you enter."}]},
+    "eqh":{candles:[[30,58,28,40,"down"],[40,60,38,44],[44,59,30,32,"down"],[32,60,30,42],[42,46,22,24,"down"]],
+      ann:[{t:"level",price:62,label:"liquidity",cls:"lvl"},{t:"tag",i:1,price:60,text:"= = equal highs",cls:"tag-hh"}]},
+    "range-build":{candles:[[22,30,18,28],[28,44,26,42],[42,46,30,40],[40,58,38,54],[54,62,40,42,"down"],
+        [42,56,40,52],[52,70,50,66],[66,72,54,56,"down"]],
+      ann:[{t:"half",top:74,bot:45,cls:"z-prem",label:"PREMIUM — look for shorts"},
+           {t:"half",top:45,bot:16,cls:"z-disc",label:"DISCOUNT — look for longs"},
+           {t:"level",price:74,label:"range high / BSL",cls:"lvl"},
+           {t:"level",price:45,label:"EQ 50%",cls:"lvl-eq"},
+           {t:"level",price:16,label:"range low / SSL",cls:"lvl"}]},
+    "nested":{candles:[[20,28,16,26],[26,40,24,38],[38,54,36,52],[52,68,50,64],[64,70,52,54,"down"],
+        [54,58,48,52],[52,74,50,70],[70,76,58,60,"down"]],
+      ann:[{t:"zone",top:76,bot:16,cls:"z-gen",label:"HTF range",tip:"Weekly / daily dealing range."},
+           {t:"zone",top:58,bot:48,cls:"z-ob-bull",label:"LTF range (discount) — tighter stop",i0:4,i1:7,tip:"Zoom into the LTF range for a much tighter stop and better RR."}]},
+    "fvg-bull":{candles:[[20,35,18,33],[33,70,32,68],[68,80,46,75]],
+      ann:[{t:"zone",top:46,bot:35,cls:"z-fvg-bull",label:"FVG",tip:"Gap = high of candle 1 to low of candle 3. Price returns to fill it."}]},
+    "fvg-bear":{candles:[[80,82,65,67,"down"],[67,68,30,32,"down"],[32,54,20,25,"down"]],
+      ann:[{t:"zone",top:65,bot:54,cls:"z-fvg-bear",label:"FVG",tip:"Gap = low of candle 1 to high of candle 3."}]},
+    "ob-bull":{candles:[[40,44,30,34,"down"],[34,38,24,26,"down"],[26,30,20,28],[28,62,27,60],[60,78,58,74]],
+      ann:[{t:"zone",top:30,bot:20,cls:"z-ob-bull",label:"OB",i0:2,i1:2,tip:"Last down candle before the up-move (that breaks structure). Demand zone."},
+           {t:"tag",i:3,price:62,text:"displacement ↑",cls:"tag-buy"}]},
+    "ob-bear":{candles:[[60,70,56,66],[66,76,64,74],[74,80,70,72,"down"],[72,73,38,40,"down"],[40,42,22,26,"down"]],
+      ann:[{t:"zone",top:80,bot:70,cls:"z-ob-bear",label:"OB",i0:2,i1:2,tip:"Last up candle before the down-move. Supply zone."},
+           {t:"tag",i:3,price:38,text:"displacement ↓",cls:"tag-sell",pos:"below"}]},
+    "breaker":{candles:[[30,52,28,48],[48,58,46,50],[50,54,30,32,"down"],[32,60,30,58],[56,60,46,50,"down"],[50,72,48,68]],
+      ann:[{t:"zone",top:58,bot:48,cls:"z-ob-bull",label:"breaker (S/R flip)",tip:"A failed bearish OB: price blows through it, then uses it as support → longs."},
+           {t:"tag",i:5,price:72,text:"retest → long",cls:"tag-buy"}]},
+    "unicorn":{candles:[[40,44,30,34,"down"],[34,38,22,24,"down"],[24,28,18,26],[26,64,25,62],[62,80,60,76]],
+      ann:[{t:"zone",top:28,bot:18,cls:"z-ob-bull",label:"OB",i0:2,i1:2},
+           {t:"zone",top:34,bot:28,cls:"z-fvg-bull",label:"FVG",i0:2,i1:3,tip:"OB + FVG stacked = the 'unicorn', the highest-probability POI."}]},
+    "po3":{candles:[[40,46,36,42],[42,45,37,40,"down"],[40,46,38,43],[43,45,30,32,"down"],[32,34,22,26],
+        [26,44,24,42],[42,60,40,58],[58,78,56,74]],
+      ann:[{t:"bracket",i0:0,i1:3,price:48,label:"Accumulation"},
+           {t:"tag",i:3,price:30,text:"Manipulation",cls:"tag-sell",pos:"below",tip:"Fake move down to grab SSL — the stop hunt."},
+           {t:"bracket",i0:5,i1:7,price:80,label:"Distribution"}]}
+  };
+
+  // ---- render -----------------------------------------------------------
+  document.querySelectorAll("svg[data-diagram]").forEach(function(svg){
+    var spec=D[svg.getAttribute("data-diagram")];
+    if(spec) draw(svg,spec);
+  });
+
+  // ---- tooltips ---------------------------------------------------------
+  var tip=document.getElementById("tip");
+  document.addEventListener("mouseover",function(e){
+    var t=e.target.closest?e.target.closest("[data-tip]"):null;
+    if(t){ tip.textContent=t.getAttribute("data-tip"); tip.style.opacity="1"; }
+  });
+  document.addEventListener("mousemove",function(e){
+    if(tip.style.opacity==="1"){
+      var x=e.clientX+14, yy=e.clientY+14;
+      if(x+250>window.innerWidth) x=e.clientX-254;
+      tip.style.left=x+"px"; tip.style.top=yy+"px";
+    }
+  });
+  document.addEventListener("mouseout",function(e){
+    var t=e.target.closest?e.target.closest("[data-tip]"):null;
+    if(t) tip.style.opacity="0";
+  });
+
+  // ---- scrollspy --------------------------------------------------------
+  var links={}, navlinks=document.querySelectorAll("nav a[href^='#']");
+  navlinks.forEach(function(a){ links[a.getAttribute("href").slice(1)]=a;
+    a.addEventListener("click",function(ev){
+      ev.preventDefault();
+      var el=document.getElementById(a.getAttribute("href").slice(1));
+      if(el) el.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  });
+  var obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(en.isIntersecting){
+        navlinks.forEach(function(a){a.classList.remove("active");});
+        var a=links[en.target.id]; if(a) a.classList.add("active");
+      }
+    });
+  },{rootMargin:"-10% 0px -75% 0px",threshold:0});
+  document.querySelectorAll("main section[id]").forEach(function(s){obs.observe(s);});
+
+  // ---- theme ------------------------------------------------------------
+  var root=document.documentElement;
+  var saved=null;
+  try{ saved=localStorage.getItem("mayne-theme"); }catch(e){}
+  if(saved) root.setAttribute("data-theme",saved);
+  document.getElementById("themebtn").addEventListener("click",function(){
+    var next=root.getAttribute("data-theme")==="dark"?"light":"dark";
+    root.setAttribute("data-theme",next);
+    try{ localStorage.setItem("mayne-theme",next); }catch(e){}
+  });
+})();
+</script>
+</body>
+</html>

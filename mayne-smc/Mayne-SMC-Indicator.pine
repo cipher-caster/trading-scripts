@@ -1,0 +1,301 @@
+//@version=6
+// =============================================================================
+// Trader Mayne SMC — Order Blocks / FVGs / Buy-Sell Signals
+// Version 1.0.0  ·  https://github.com/cipher-caster/trading-scripts
+// =============================================================================
+// Mechanical implementation of the Smart Money Concepts system taught by
+// Trader Mayne (YouTube @TraderMayne, "Trading Bootcamp" / Whiteboard Series).
+// Independent fan implementation — not affiliated with or endorsed by Mayne.
+// NOT FINANCIAL ADVICE. See README.md and guide.html. It detects:
+//   - Market structure + trend bias (MSB/MSS on confirmed swings)
+//   - Dealing range -> premium / discount / equilibrium (the 50%)
+//   - Fair Value Gaps (3-candle imbalance, optional displacement filter)
+//   - Order Blocks (last opposite candle before a structure-breaking move)
+//   - BUY / SELL signals when price retests a same-direction POI in the
+//     correct half of the range (discount for longs, premium for shorts)
+//
+// Study/testing tool, NOT financial advice. Signals are mechanical
+// approximations of a discretionary method — backtest before trusting them.
+// =============================================================================
+
+indicator("Trader Mayne SMC — OB / FVG / Signals", shorttitle="Mayne SMC", overlay=true, max_boxes_count=500)
+
+// ---------------------------------------------------------------- Inputs ----
+gS = "Market Structure / Bias"
+swingLen  = input.int(2, "Swing length (pivot left/right)", minval=1, maxval=10, group=gS, tooltip="3-candle swing = 1. Higher = only bigger, more significant swings.")
+atrLen    = input.int(14, "ATR length (displacement)", minval=1, group=gS)
+dispMult  = input.float(1.5, "Displacement: candle range >= ATR x", minval=0.1, step=0.1, group=gS, tooltip="What counts as a strong/displacement candle.")
+showBias  = input.bool(false, "Show range high/low + equilibrium lines", group=gS)
+showStruct = input.bool(true, "Show MSB / MSS markers", group=gS, tooltip="MSB = structure break in the trend direction (continuation). MSS = first break against the trend (potential reversal).")
+markerGap  = input.float(0.1, "Marker distance from candle (×ATR)", minval=0, step=0.05, group=gS, tooltip="How far BUY/SELL/MSB/MSS markers sit from the candle. Lower = closer/flush; 0 = right at the high/low.")
+showTint  = input.bool(false, "Tint background by bias", group=gS, tooltip="Colours every bar green/red by trend. Off keeps the chart clean so BUY/SELL labels stand out.")
+
+gF = "Fair Value Gaps"
+showFvg    = input.bool(true, "Show FVGs", group=gF)
+fvgReqDisp = input.bool(true, "Require displacement on middle candle", group=gF)
+fvgBullCol = input.color(color.new(color.blue, 90), "Bullish FVG", group=gF)
+fvgBearCol = input.color(color.new(color.purple, 90), "Bearish FVG", group=gF)
+
+gO = "Order Blocks"
+showOb   = input.bool(true, "Show Order Blocks", group=gO)
+obReqBos = input.bool(true, "Only OBs whose move breaks structure", group=gO)
+obBullCol = input.color(color.new(color.green, 90), "Bullish OB (demand)", group=gO)
+obBearCol = input.color(color.new(color.red, 90), "Bearish OB (supply)", group=gO)
+
+gZ = "Zone display"
+freezeMit = input.bool(true, "Stop extending zones once mitigated", group=gZ, tooltip="A zone freezes (stops stretching to the present) once price trades into its 50% mean threshold. Keeps spent zones from blocking the chart; only untouched zones reach the live bar.")
+
+gG = "Signals"
+useHalf   = input.bool(true, "Require correct half (discount/premium)", group=gG, tooltip="Longs only in discount, shorts only in premium — the Mayne rule.")
+entryMid  = input.bool(true, "Trigger at zone 50% (mean threshold)", group=gG, tooltip="On = signal when price reaches the middle of the OB/FVG. Off = signal on first touch of the zone edge.")
+maxZones  = input.int(40, "Max zones tracked per side", minval=5, maxval=120, group=gG)
+
+gT = "Zone Table"
+showTable = input.bool(true, "Show next buy/sell zone table", group=gT)
+tableRows = input.int(3, "Zones shown per side", minval=1, maxval=6, group=gT, tooltip="How many of the nearest demand (buy) and supply (sell) zones to list.")
+tablePos  = input.string("Top Right", "Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"], group=gT)
+
+BOX_LEAD = 3      // bars a live zone box projects past the current bar
+
+// ------------------------------------------------------------- Core data ----
+atr  = ta.atr(atrLen)
+disp = (high - low) >= atr * dispMult                 // displacement candle
+
+// ------------------------------------------------ Swings, structure, bias ---
+ph = ta.pivothigh(swingLen, swingLen)
+pl = ta.pivotlow(swingLen, swingLen)
+
+var float rangeHigh = na      // last confirmed swing high (range top / BSL) — break level up
+var float rangeLow  = na      // last confirmed swing low  (range bottom / SSL) — break level down
+var bool  brokeHigh = true    // has the current swing high already been broken?
+var bool  brokeLow  = true
+
+if not na(ph)
+    rangeHigh := ph
+    brokeHigh := false
+if not na(pl)
+    rangeLow := pl
+    brokeLow := false
+
+// Trend state and the MSB / MSS distinction (guide §1):
+//   MSB (continuation) = a break in the SAME direction as the current trend.
+//   MSS (reversal)     = the FIRST break AGAINST the current trend; it flips the trend.
+// Mechanically identical to the SMC BOS / CHoCH pair.
+var int trend = 0             // 1 = bullish, -1 = bearish, 0 = undecided
+breakUp = not na(rangeHigh) and not brokeHigh and close > rangeHigh
+breakDn = not na(rangeLow)  and not brokeLow  and close < rangeLow
+
+bullMSS = false               // break up that reverses a downtrend  (CHoCH up)
+bullMSB = false               // break up that continues an uptrend  (BOS up)
+bearMSS = false               // break down that reverses an uptrend (CHoCH down)
+bearMSB = false               // break down that continues a downtrend (BOS down)
+
+if breakUp
+    brokeHigh := true
+    if trend == -1
+        bullMSS := true       // was bearish -> first up-break = reversal
+    else
+        bullMSB := true       // already bullish (or fresh) -> continuation
+    trend := 1
+if breakDn
+    brokeLow := true
+    if trend == 1
+        bearMSS := true       // was bullish -> first down-break = reversal
+    else
+        bearMSB := true
+    trend := -1
+
+structBreakUp = bullMSB or bullMSS   // any up-break (qualifies a bullish OB)
+structBreakDn = bearMSB or bearMSS
+
+// dealing range + equilibrium (the 50%)
+validRange = not na(rangeHigh) and not na(rangeLow) and rangeHigh > rangeLow
+eq = validRange ? (rangeHigh + rangeLow) / 2 : na
+inDiscount = not na(eq) and close < eq
+inPremium  = not na(eq) and close > eq
+
+plot(showBias and not na(rangeHigh) ? rangeHigh : na, "Range High (BSL)", color.new(color.gray, 0), 1, plot.style_linebr)
+plot(showBias and not na(rangeLow)  ? rangeLow  : na, "Range Low (SSL)",  color.new(color.gray, 0), 1, plot.style_linebr)
+plot(showBias and not na(eq) ? eq : na, "Equilibrium (50%)", color.new(color.orange, 30), 1, plot.style_linebr)
+
+// ------------------------------------------------------------ Zone model ----
+// One type replaces the old set of parallel arrays. Objects are references, so
+// the manage/render helpers below mutate fields in place (no array.set needed).
+type Zone
+    float  top
+    float  bot
+    bool   done       // a signal has already fired off this zone
+    bool   mit        // price has reached the 50% (zone is "mitigated"/spent)
+    string kind       // "OB" or "FVG"
+    bool   isBull     // demand (buy) vs supply (sell)
+    box    bx
+
+var array<Zone> bullZones = array.new<Zone>()   // demand
+var array<Zone> bearZones = array.new<Zone>()   // supply
+
+// The price level a signal fires at: the 50% mean threshold, or the near edge.
+trigOf(Zone z) => entryMid ? (z.top + z.bot) / 2 : (z.isBull ? z.top : z.bot)
+
+addZone(array<Zone> zones, bool isBull, float top, float bot, color col, string kind) =>
+    bx = box.new(bar_index, top, bar_index + BOX_LEAD, bot, border_color=color.new(col, 40), bgcolor=col)
+    array.push(zones, Zone.new(top, bot, false, false, kind, isBull, bx))
+    if array.size(zones) > maxZones
+        box.delete(array.shift(zones).bx)
+
+// Drop invalidated zones, freeze/extend the rest, and flag a retest signal.
+// Returns true if any zone in this set produced a signal on this bar.
+manageZones(array<Zone> zones) =>
+    sig = false
+    if array.size(zones) > 0
+        for i = array.size(zones) - 1 to 0
+            z = array.get(zones, i)
+            mid = (z.top + z.bot) / 2
+            invalid = z.isBull ? close < z.bot : close > z.top
+            if invalid
+                array.remove(zones, i)
+                box.delete(z.bx)         // remove first so the block ends on a void call
+            else
+                reached = z.isBull ? low <= mid : high >= mid
+                if not z.mit and reached
+                    z.mit := true
+                    if freezeMit
+                        box.set_right(z.bx, bar_index)          // spent -> freeze here
+                else if not freezeMit or not z.mit
+                    box.set_right(z.bx, bar_index + BOX_LEAD)    // still live -> keep extending
+                trig = trigOf(z)
+                dirOk = z.isBull ? trend == 1 : trend == -1
+                locOk = z.isBull ? (not useHalf or inDiscount) : (not useHalf or inPremium)
+                hitTrig = z.isBull ? low <= trig : high >= trig
+                if not z.done and hitTrig and dirOk and locOk
+                    sig := true
+                    z.done := true
+    sig
+
+// ------------------------------------------------------ Fair Value Gaps -----
+// 3-candle imbalance. Indices: candle1=[2], displacement=[1], candle3=[0].
+bullFvg = low > high[2] and (not fvgReqDisp or (close[1] > open[1] and disp[1]))
+bearFvg = high < low[2]  and (not fvgReqDisp or (close[1] < open[1] and disp[1]))
+
+if showFvg and bullFvg
+    addZone(bullZones, true,  low, high[2], fvgBullCol, "FVG")   // gap: high[2] (bottom) -> low[0] (top)
+if showFvg and bearFvg
+    addZone(bearZones, false, low[2], high, fvgBearCol, "FVG")   // gap: high[0] (bottom) -> low[2] (top)
+
+// -------------------------------------------------------- Order Blocks ------
+// Track the most recent opposite-direction candle, then claim it when a
+// structure-breaking displacement fires.
+var float lastDownHi = na
+var float lastDownLo = na
+var float lastUpHi   = na
+var float lastUpLo   = na
+if close < open
+    lastDownHi := high
+    lastDownLo := low
+if close > open
+    lastUpHi := high
+    lastUpLo := low
+
+obBullTrig = showOb and disp and close > open and (not obReqBos or structBreakUp)
+obBearTrig = showOb and disp and close < open and (not obReqBos or structBreakDn)
+if obBullTrig and not na(lastDownHi)
+    addZone(bullZones, true, lastDownHi, lastDownLo, obBullCol, "OB")   // demand
+if obBearTrig and not na(lastUpHi)
+    addZone(bearZones, false, lastUpHi, lastUpLo, obBearCol, "OB")      // supply
+
+// --------------------------------------------- Manage zones + fire signals --
+buySig  = manageZones(bullZones)
+sellSig = manageZones(bearZones)
+
+// ------------------------------------------------------------- Plotting -----
+// location.absolute pins markers a fixed (ATR-scaled) distance from the candle,
+// instead of letting belowbar/abovebar stack them into far-off lanes.
+gap  = atr * markerGap
+yBelow = low  - gap                   // MSB dots — near-flush to the bar
+yAbove = high + gap
+yBelowFar = low  - gap - atr * 0.12   // text labels — just outside the dots
+yAboveFar = high + gap + atr * 0.12
+
+plotshape(buySig  ? yBelowFar : na, "BUY",  shape.labelup,   location.absolute, color.new(color.green, 0), text="BUY",  textcolor=color.white, size=size.small)
+plotshape(sellSig ? yAboveFar : na, "SELL", shape.labeldown, location.absolute, color.new(color.red, 0),   text="SELL", textcolor=color.white, size=size.small)
+
+// Structure breaks: MSB = continuation (dot), MSS = reversal/CHoCH (label text).
+plotshape(showStruct and bullMSB ? yBelow : na, "MSB up",   shape.circle, location.absolute, color.new(color.green, 0),  size=size.tiny)
+plotshape(showStruct and bearMSB ? yAbove : na, "MSB down", shape.circle, location.absolute, color.new(color.red, 0),    size=size.tiny)
+plotshape(showStruct and bullMSS ? yBelowFar : na, "MSS up",   shape.labelup,   location.absolute, color.new(color.lime, 0),   text="MSS", textcolor=color.black, size=size.tiny)
+plotshape(showStruct and bearMSS ? yAboveFar : na, "MSS down", shape.labeldown, location.absolute, color.new(color.orange, 0), text="MSS", textcolor=color.black, size=size.tiny)
+
+bgcolor(showTint ? (trend == 1 ? color.new(color.green, 94) : trend == -1 ? color.new(color.red, 94) : na) : na, title="Bias tint")
+
+// --------------------------------------------------------------- Alerts -----
+alertcondition(buySig,  "Mayne SMC BUY",  "Bullish POI retest in discount — long signal")
+alertcondition(sellSig, "Mayne SMC SELL", "Bearish POI retest in premium — short signal")
+alertcondition(bullMSB, "MSB Up",   "Bullish structure break (continuation)")
+alertcondition(bearMSB, "MSB Down", "Bearish structure break (continuation)")
+alertcondition(bullMSS, "MSS Up",   "Bullish structure shift (potential reversal up)")
+alertcondition(bearMSS, "MSS Down", "Bearish structure shift (potential reversal down)")
+
+// ------------------------------------------------- Next buy/sell zone table -
+// Nearest demand zones at/below price (BUY) and supply zones at/above (SELL),
+// with the full entry range, the 50% mean threshold, and distance to the near edge.
+posMap = tablePos == "Top Left" ? position.top_left : tablePos == "Bottom Right" ? position.bottom_right : tablePos == "Bottom Left" ? position.bottom_left : position.top_right
+var table zt = na
+if showTable and na(zt)
+    zt := table.new(posMap, 4, 6 + 2 * tableRows, border_width=1, frame_width=1, frame_color=color.new(color.gray, 40))
+
+fmtP(p) => str.tostring(p, format.mintick)
+distPct(lvl) => str.tostring(math.abs(lvl - close) / close * 100, "#.##") + "%"
+
+writeZoneRow(int r, string kind, float tp, float bt, float nearEdge) =>
+    empty = na(tp)
+    table.cell(zt, 0, r, empty ? "—" : kind, text_size=size.normal, text_color=empty ? color.gray : chart.fg_color)
+    table.cell(zt, 1, r, empty ? "" : fmtP(bt) + " – " + fmtP(tp), text_size=size.normal)
+    table.cell(zt, 2, r, empty ? "" : fmtP((tp + bt) / 2), text_size=size.normal)
+    table.cell(zt, 3, r, empty ? "" : distPct(nearEdge), text_size=size.normal)
+
+// Render one section: its header, column labels, then the nearest `tableRows`
+// eligible zones (wantBull => demand below price, else supply above), closest first.
+renderSection(array<Zone> zones, bool wantBull, int hdrRow, color hdrCol, string title) =>
+    table.cell(zt, 0, hdrRow, title, text_size=size.normal, text_color=color.white, bgcolor=hdrCol)
+    table.cell(zt, 1, hdrRow, "", bgcolor=hdrCol)
+    table.cell(zt, 2, hdrRow, "", bgcolor=hdrCol)
+    table.cell(zt, 3, hdrRow, "", bgcolor=hdrCol)
+    table.cell(zt, 0, hdrRow + 1, "Type",          text_size=size.normal, text_color=color.gray)
+    table.cell(zt, 1, hdrRow + 1, "Entry (range)", text_size=size.normal, text_color=color.gray)
+    table.cell(zt, 2, hdrRow + 1, "50%",           text_size=size.normal, text_color=color.gray)
+    table.cell(zt, 3, hdrRow + 1, "Dist",          text_size=size.normal, text_color=color.gray)
+    eligible = array.new<Zone>()
+    for z in zones
+        if wantBull ? trigOf(z) <= close : trigOf(z) >= close
+            array.push(eligible, z)
+    for k = 0 to tableRows - 1
+        r = hdrRow + 2 + k
+        if array.size(eligible) == 0
+            writeZoneRow(r, "—", na, na, na)
+        else
+            bi = 0
+            best = trigOf(array.get(eligible, 0))
+            if array.size(eligible) > 1
+                for j = 1 to array.size(eligible) - 1
+                    t = trigOf(array.get(eligible, j))
+                    if wantBull ? t > best : t < best   // nearest = highest below / lowest above
+                        best := t
+                        bi := j
+            z = array.get(eligible, bi)
+            array.remove(eligible, bi)   // remove first so the block ends on a void call
+            writeZoneRow(r, z.kind, z.top, z.bot, wantBull ? z.top : z.bot)
+
+if showTable and barstate.islast
+    biasTxt = trend == 1 ? "Bullish" : trend == -1 ? "Bearish" : "—"
+    biasCol = trend == 1 ? color.new(color.green, 0) : trend == -1 ? color.new(color.red, 0) : color.gray
+    locTxt = not na(eq) ? (inDiscount ? "Discount" : inPremium ? "Premium" : "Equilibrium") : "—"
+    hdr = color.new(color.blue, 20)
+    table.cell(zt, 0, 0, "BIAS",  text_size=size.normal, text_color=color.white, bgcolor=hdr)
+    table.cell(zt, 1, 0, biasTxt, text_size=size.normal, text_color=biasCol,    bgcolor=hdr)
+    table.cell(zt, 2, 0, "PRICE", text_size=size.normal, text_color=color.white, bgcolor=hdr)
+    table.cell(zt, 3, 0, fmtP(close), text_size=size.normal, text_color=color.white, bgcolor=hdr)
+    table.cell(zt, 0, 1, "RANGE", text_size=size.normal, text_color=color.white, bgcolor=hdr)
+    table.cell(zt, 1, 1, locTxt, text_size=size.normal, bgcolor=hdr)
+    table.cell(zt, 2, 1, "EQ",    text_size=size.normal, text_color=color.white, bgcolor=hdr)
+    table.cell(zt, 3, 1, na(eq) ? "—" : fmtP(eq), text_size=size.normal, bgcolor=hdr)
+    renderSection(bearZones, false, 2,             color.new(color.red, 20),   "SELL ZONES (above)")
+    renderSection(bullZones, true,  4 + tableRows, color.new(color.green, 20), "BUY ZONES (below)")
