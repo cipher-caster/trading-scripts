@@ -587,16 +587,17 @@
       and BUY/SELL signals. This section ties the theory to what actually prints on your chart.</p>
 
       <h3>Which timeframe?</h3>
-      <p>The indicator is <b>single-timeframe</b> — it reads bias and fires off whatever chart you
-        open it on. Run it on two charts, top-down: read the <b>BIAS</b> on the higher one (H12 or
-        Weekly), take signals on the lower (H1 or M15). The BIAS row is always the current chart's
-        timeframe — it does not sync HTF for you. That top-down read is the one judgment call Mayne
-        wants you making yourself.</p>
+      <p>The indicator reads bias and fires off whatever chart you open it on, and can optionally
+        <b>enforce one higher timeframe for you</b>: set <i>Signals → HTF bias timeframe</i> (e.g.
+        <code>240</code> while charting M15) and signals that disagree with that HTF's trend are
+        suppressed. Still run it top-down across charts: read the <b>BIAS</b> on the higher one (H12
+        or Weekly), take signals on the lower (H1 or M15). The gate covers the immediate pair; the
+        read above it — Weekly/Daily — is the judgment call Mayne wants you making yourself.</p>
 
       <h3>What you'll see on the chart</h3>
       <table>
         <tr><th>Element</th><th>On by default?</th><th>Meaning</th></tr>
-        <tr><td>"BUY" / "SELL" labels</td><td>yes</td><td>A signal fired. The thing you actually trade off.</td></tr>
+        <tr><td>"BUY·OB" / "SELL·FVG" labels</td><td>yes</td><td>A signal fired — the suffix is the POI type that triggered it (order block vs FVG). The thing you actually trade off.</td></tr>
         <tr><td>Blue / purple boxes</td><td>yes</td><td>Fair Value Gaps — blue = bullish, purple = bearish.</td></tr>
         <tr><td>Green / red boxes</td><td>yes</td><td>Order Blocks — green = bullish demand, red = bearish supply.</td></tr>
         <tr><td>Dots above/below bars</td><td>yes</td><td>MSB — structure break in the trend direction (continuation).</td></tr>
@@ -607,7 +608,9 @@
       </table>
       <p class="muted">Zones stop extending once <b>used</b>: the moment price trades into a zone's
         50% mean threshold it's "mitigated" and its box freezes at that bar, so only still-actionable
-        zones reach the live bar.</p>
+        zones reach the live bar. Zones also <b>expire from old age</b> (default 500 bars untouched):
+        the box freezes, the zone leaves the table and can no longer signal — old POIs decay, and the
+        fixed bar count makes LTF zones expire faster in wall-clock time than HTF ones.</p>
 
       <h3>The zone table (top-right)</h3>
       <p>Reads off the nearest <b>buy zones below price</b> and <b>sell zones above price</b>, so you
@@ -629,14 +632,21 @@
         <li><b>50%</b> — the mean threshold, the optimal fill and the level the on-chart signal fires at.</li>
         <li><b>Dist</b> — how far the near edge is from price (how far price must travel to first touch).</li>
       </ul>
-      <p class="muted">The table lists <i>candidate</i> zones. A zone becomes an actual BUY/SELL signal
-        only when price reaches it <b>and</b> bias + premium/discount agree. Table = the map, labels =
-        the trigger.</p>
+      <p class="muted">The table lists <i>live candidate</i> zones only — a zone drops off once it has
+        fired or been mitigated (price reached its 50%), so the map never shows spent levels. A zone
+        becomes an actual BUY/SELL signal only when price reaches it <b>and</b> bias +
+        premium/discount (+ the optional HTF / sweep gates) agree. Table = the map, labels = the
+        trigger.</p>
 
       <h3>How a signal fires</h3>
-      <p>A <b>BUY</b> prints only when all three line up on the same bar: (1) bias is bullish,
-        (2) price is in discount, (3) price retests a bullish OB or FVG at its 50% mean threshold.
-        <b>SELL</b> is the mirror. Each zone fires once; a zone deleted when price closes through it.</p>
+      <p>A <b>BUY</b> prints only when everything lines up on the same bar: (1) bias is bullish,
+        (2) price is in discount, (3) price retests a bullish OB or FVG at its 50% mean threshold —
+        a genuine retest: the bar that created the zone can't fire it, and a zone whose 50% was
+        already consumed earlier is spent; plus the optional gates: (4) the HTF trend agrees, if
+        <i>HTF bias timeframe</i> is set, and (5) a recent sweep of the range low, if
+        <i>Require liquidity sweep first</i> is on. <b>SELL</b> is the mirror. Signals default to
+        <b>bar-close confirmation</b> (no mid-bar flicker; alerts fire on the close). Each zone fires
+        once; a zone is deleted when price closes through it.</p>
 
       <h3>Inputs that matter</h3>
       <table>
@@ -646,27 +656,34 @@
         <tr><td>Displacement ≥ ATR ×</td><td>1.5</td><td>Demand stronger displacement before trusting an FVG/OB.</td></tr>
         <tr><td>Require correct half</td><td>on</td><td>Enforce buy-low / sell-high.</td></tr>
         <tr><td>Trigger at zone 50%</td><td>on</td><td>Signal at the midpoint; off = first touch of the edge.</td></tr>
+        <tr><td>HTF bias timeframe</td><td>blank (off)</td><td>Only allow signals agreeing with this higher TF's trend — the §4 master filter. Must be higher than the chart TF.</td></tr>
+        <tr><td>Confirm signals on bar close</td><td>on</td><td>No intra-bar flicker; off = fire on first touch.</td></tr>
+        <tr><td>Require liquidity sweep first</td><td>off</td><td>Only signal after a recent run + rejection of the range low/high — the §2 sweep rule. Strict, so opt-in.</td></tr>
+        <tr><td>Max zone age (bars)</td><td>500</td><td>Expire untouched zones (frozen box, no table, no signals). Lower to declutter LTF charts; 0 = never.</td></tr>
       </table>
       <details>
         <summary>Honest limits — what it does NOT do</summary>
         <ul>
-          <li><b>Single timeframe only.</b> Keep your real HTF bias on a separate chart; treat a signal
-            that disagrees with the HTF as noise.</li>
-          <li><b>No liquidity-sweep confirmation, no RR gate, no SMT / kill-zone logic.</b> A signal
-            means "a POI is being retested in the right local context" — not "take this trade."</li>
-          <li><b>Confirms with lag (not a bug).</b> Swings need <code>Swing length</code> bars to the
-            right before they confirm, so structure appears a few bars late rather than repainting.</li>
+          <li><b>The HTF gate is one timeframe, not the full stack.</b> It enforces agreement with one
+            higher chart; the Weekly → Daily → H4 read — and spotting an HTF pullback vs a reversal —
+            is still yours. Keep the Weekly open.</li>
+          <li><b>The sweep filter is mechanical, not the full §2 definition.</b> It checks run +
+            rejection on the current unbroken swing level only — not older equal highs/lows, sweep
+            quality, or the displacement leg.</li>
+          <li><b>No RR gate, no SMT / kill-zone logic.</b> A signal means "a POI is being retested in
+            the right context" — not "take this trade."</li>
+          <li><b>Confirms with lag (not a bug).</b> Swings need <code>Swing length</code> bars to
+            confirm, the HTF gate uses the last closed HTF bar, and signals default to bar-close
+            confirmation — late beats repainting.</li>
         </ul>
       </details>
     </section>
 
     <footer>
-      <p><b>Not financial advice</b> — a study/testing aid only. Derived from the free educational
-        series by <a href="https://www.youtube.com/@TraderMayne">Trader Mayne</a>
-        (<a href="https://www.youtube.com/playlist?list=PLKItFyoma4GeQSNjY7LM5qtEgTFUidxYI">Trading
-        Bootcamp playlist</a>). Independent, unofficial fan implementation — not affiliated with or
-        endorsed by Mayne. Faithful to his taught system; watch the original videos for chart-by-chart
-        examples. Part of <a href="https://github.com/cipher-caster/trading-scripts">trading-scripts</a>.</p>
+      <p>Derived visual view. Source of truth: <code>_SMC-System-Guide.md</code> and
+        <code>Indicator/README.md</code> in this folder — if those change, regenerate this file.
+        Study/testing aid, not financial advice. Faithful to Mayne's taught system; drill into the
+        episode transcripts for chart-by-chart examples.</p>
     </footer>
   </main>
 </div>

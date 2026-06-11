@@ -1,24 +1,38 @@
 //@version=6
 // =============================================================================
 // Trader Mayne SMC — Order Blocks / FVGs / Buy-Sell Signals
-// Version 1.0.0  ·  https://github.com/cipher-caster/trading-scripts
+// Version: 2.2 (2026-06-11) — version history at the bottom of this header
 // =============================================================================
-// Mechanical implementation of the Smart Money Concepts system taught by
-// Trader Mayne (YouTube @TraderMayne, "Trading Bootcamp" / Whiteboard Series).
-// Independent fan implementation — not affiliated with or endorsed by Mayne.
-// NOT FINANCIAL ADVICE. See README.md and guide.html. It detects:
+// Mechanical implementation of the system distilled in this folder's
+// _SMC-System-Guide.md (Trader Mayne "Whiteboard Series"). It detects:
 //   - Market structure + trend bias (MSB/MSS on confirmed swings)
 //   - Dealing range -> premium / discount / equilibrium (the 50%)
 //   - Fair Value Gaps (3-candle imbalance, optional displacement filter)
 //   - Order Blocks (last opposite candle before a structure-breaking move)
 //   - BUY / SELL signals when price retests a same-direction POI in the
 //     correct half of the range (discount for longs, premium for shorts)
+//   - Optional gates: HTF bias agreement (guide §4, the master filter) and
+//     a prior liquidity sweep (guide §2, run + rejection)
 //
 // Study/testing tool, NOT financial advice. Signals are mechanical
 // approximations of a discretionary method — backtest before trusting them.
+//
+// Version history:
+//   2.2 (2026-06-11) Zone age expiry: untouched zones go stale after
+//                    `Max zone age` bars (frozen box, no table, no signals).
+//   2.1 (2026-06-11) Audit fixes: spent (mitigated) zones can no longer fire
+//                    on a later revisit; HTF gate self-disables when the
+//                    selected TF is not strictly higher than the chart's.
+//   2.0 (2026-06-11) Retest fix (no signal on the zone-creation bar), OB
+//                    dedup (a candle can be claimed once), table hides spent
+//                    zones, HTF bias gate, bar-close confirmation, liquidity
+//                    sweep filter, true box origins, BUY·OB/SELL·FVG labels.
+//   1.0 (2026-06-07) Initial: structure/bias, FVGs, OBs, premium/discount,
+//                    signals, zone table.
 // =============================================================================
 
-indicator("Trader Mayne SMC — OB / FVG / Signals", shorttitle="Mayne SMC", overlay=true, max_boxes_count=500)
+VERSION = "2.2"   // bump here + add a history line above — title/shorttitle pick it up
+indicator("Trader Mayne SMC — OB / FVG / Signals v" + VERSION, shorttitle="Mayne SMC v" + VERSION, overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // ---------------------------------------------------------------- Inputs ----
 gS = "Market Structure / Bias"
@@ -44,10 +58,15 @@ obBearCol = input.color(color.new(color.red, 90), "Bearish OB (supply)", group=g
 
 gZ = "Zone display"
 freezeMit = input.bool(true, "Stop extending zones once mitigated", group=gZ, tooltip="A zone freezes (stops stretching to the present) once price trades into its 50% mean threshold. Keeps spent zones from blocking the chart; only untouched zones reach the live bar.")
+zoneMaxAge = input.int(500, "Max zone age (bars, 0 = never)", minval=0, group=gZ, tooltip="A zone untouched for this many bars goes stale: its box freezes, it leaves the table, and it can no longer signal. Old POIs decay — the dealing range resets every MSB, so ancient zones aren't real retest candidates, especially on low timeframes (500 bars is ~5 days on M15 but ~10 months on 12h, so LTF zones expire faster in wall-clock time, as they should). 0 = zones live until invalidated (old behaviour).")
 
 gG = "Signals"
 useHalf   = input.bool(true, "Require correct half (discount/premium)", group=gG, tooltip="Longs only in discount, shorts only in premium — the Mayne rule.")
 entryMid  = input.bool(true, "Trigger at zone 50% (mean threshold)", group=gG, tooltip="On = signal when price reaches the middle of the OB/FVG. Off = signal on first touch of the zone edge.")
+htfTf     = input.timeframe("", "HTF bias timeframe (blank = off)", group=gG, tooltip="The master filter (guide §4): only fire signals that agree with the trend read on this higher timeframe. E.g. run the chart on M15 with this set to 240 (H4). Must be HIGHER than the chart timeframe — equal or lower silently disables the gate. Uses the last CONFIRMED HTF bar, so it does not repaint but lags by one HTF bar. Blank = no HTF gate.")
+confirmClose = input.bool(true, "Confirm signals on bar close", group=gG, tooltip="On = signals (and alerts) only fire when the bar closes, so they never appear mid-bar and vanish. Off = fire intra-bar on first touch (earlier, but can repaint within the live bar).")
+useSweep  = input.bool(false, "Require liquidity sweep first", group=gG, tooltip="Guide §2: only take a long if price recently RAN the range low and closed back above it (rejection) — mirrored for shorts. Mechanical approximation: wick through the unbroken swing level + close back inside, within the lookback. Cuts signal count hard; off by default.")
+sweepBars = input.int(20, "Sweep lookback (bars)", minval=1, maxval=200, group=gG, tooltip="How recent the sweep must be for the filter above.")
 maxZones  = input.int(40, "Max zones tracked per side", minval=5, maxval=120, group=gG)
 
 gT = "Zone Table"
@@ -118,6 +137,51 @@ plot(showBias and not na(rangeHigh) ? rangeHigh : na, "Range High (BSL)", color.
 plot(showBias and not na(rangeLow)  ? rangeLow  : na, "Range Low (SSL)",  color.new(color.gray, 0), 1, plot.style_linebr)
 plot(showBias and not na(eq) ? eq : na, "Equilibrium (50%)", color.new(color.orange, 30), 1, plot.style_linebr)
 
+// ----------------------------------------------------------- HTF bias gate --
+// Same swing/break trend logic as above, self-contained so request.security
+// can run it on the higher timeframe (guide §4: the HTF is the boss).
+f_trend() =>
+    _ph = ta.pivothigh(swingLen, swingLen)
+    _pl = ta.pivotlow(swingLen, swingLen)
+    var float _rh = na
+    var float _rl = na
+    var bool  _bh = true
+    var bool  _bl = true
+    var int   _t  = 0
+    if not na(_ph)
+        _rh := _ph
+        _bh := false
+    if not na(_pl)
+        _rl := _pl
+        _bl := false
+    if not na(_rh) and not _bh and close > _rh
+        _bh := true
+        _t  := 1
+    if not na(_rl) and not _bl and close < _rl
+        _bl := true
+        _t  := -1
+    _t
+
+// [1] = last confirmed HTF bar: lags one HTF bar but never repaints.
+htfTrend = request.security(syminfo.tickerid, htfTf == "" ? timeframe.period : htfTf, f_trend()[1], lookahead=barmerge.lookahead_off)
+// Gate only engages when the selected TF is strictly HIGHER than the chart's —
+// security() on an equal/lower TF returns junk, so those silently disable it.
+htfOn = htfTf != "" and timeframe.in_seconds(htfTf) > timeframe.in_seconds(timeframe.period)
+
+// ------------------------------------------------------- Liquidity sweeps ---
+// Guide §2: a sweep = price RUNS the level but closes back on the original
+// side (rejection). Tracked on the current unbroken swing high/low. The
+// displacement leg the guide also wants is partly enforced downstream (OBs
+// require displacement; FVGs optionally) — this is a mechanical approximation.
+var int lastBullSweep = na    // bar of the last run on the range low that got rejected
+var int lastBearSweep = na    // bar of the last run on the range high that got rejected
+if not na(rangeLow) and not brokeLow and low < rangeLow and close > rangeLow
+    lastBullSweep := bar_index
+if not na(rangeHigh) and not brokeHigh and high > rangeHigh and close < rangeHigh
+    lastBearSweep := bar_index
+bullSweepOk = not na(lastBullSweep) and bar_index - lastBullSweep <= sweepBars
+bearSweepOk = not na(lastBearSweep) and bar_index - lastBearSweep <= sweepBars
+
 // ------------------------------------------------------------ Zone model ----
 // One type replaces the old set of parallel arrays. Objects are references, so
 // the manage/render helpers below mutate fields in place (no array.set needed).
@@ -129,6 +193,7 @@ type Zone
     string kind       // "OB" or "FVG"
     bool   isBull     // demand (buy) vs supply (sell)
     box    bx
+    int    created    // bar the zone was confirmed — no signal on this bar (a retest needs price to LEAVE first)
 
 var array<Zone> bullZones = array.new<Zone>()   // demand
 var array<Zone> bearZones = array.new<Zone>()   // supply
@@ -136,25 +201,35 @@ var array<Zone> bearZones = array.new<Zone>()   // supply
 // The price level a signal fires at: the 50% mean threshold, or the near edge.
 trigOf(Zone z) => entryMid ? (z.top + z.bot) / 2 : (z.isBull ? z.top : z.bot)
 
-addZone(array<Zone> zones, bool isBull, float top, float bot, color col, string kind) =>
-    bx = box.new(bar_index, top, bar_index + BOX_LEAD, bot, border_color=color.new(col, 40), bgcolor=col)
-    array.push(zones, Zone.new(top, bot, false, false, kind, isBull, bx))
+// The edge price touches first coming back to the zone (demand: top, supply: bottom).
+edgeOf(Zone z) => z.isBull ? z.top : z.bot
+
+addZone(array<Zone> zones, bool isBull, int left, float top, float bot, color col, string kind) =>
+    bx = box.new(left, top, bar_index + BOX_LEAD, bot, border_color=color.new(col, 40), bgcolor=col)
+    array.push(zones, Zone.new(top, bot, false, false, kind, isBull, bx, bar_index))
     if array.size(zones) > maxZones
         box.delete(array.shift(zones).bx)
 
 // Drop invalidated zones, freeze/extend the rest, and flag a retest signal.
-// Returns true if any zone in this set produced a signal on this bar.
+// Returns [fired, kind-of-the-zone-that-fired] for this bar.
 manageZones(array<Zone> zones) =>
     sig = false
+    sigKind = ""
     if array.size(zones) > 0
         for i = array.size(zones) - 1 to 0
             z = array.get(zones, i)
             mid = (z.top + z.bot) / 2
             invalid = z.isBull ? close < z.bot : close > z.top
+            expired = zoneMaxAge > 0 and bar_index - z.created > zoneMaxAge
             if invalid
                 array.remove(zones, i)
                 box.delete(z.bx)         // remove first so the block ends on a void call
+            else if expired
+                array.remove(zones, i)   // stale: stop tracking (no table, no signals)...
+                if not z.mit or not freezeMit
+                    box.set_right(z.bx, bar_index)   // ...but keep the box, frozen where it died
             else
+                wasMit = z.mit               // 50% already consumed on an EARLIER bar -> zone is spent
                 reached = z.isBull ? low <= mid : high >= mid
                 if not z.mit and reached
                     z.mit := true
@@ -163,13 +238,18 @@ manageZones(array<Zone> zones) =>
                 else if not freezeMit or not z.mit
                     box.set_right(z.bx, bar_index + BOX_LEAD)    // still live -> keep extending
                 trig = trigOf(z)
-                dirOk = z.isBull ? trend == 1 : trend == -1
-                locOk = z.isBull ? (not useHalf or inDiscount) : (not useHalf or inPremium)
+                isRetest = bar_index > z.created                 // not the bar that built the zone
+                barOk  = not confirmClose or barstate.isconfirmed
+                dirOk  = z.isBull ? trend == 1 : trend == -1
+                htfOk  = not htfOn or (z.isBull ? htfTrend == 1 : htfTrend == -1)
+                locOk  = z.isBull ? (not useHalf or inDiscount) : (not useHalf or inPremium)
+                swpOk  = not useSweep or (z.isBull ? bullSweepOk : bearSweepOk)
                 hitTrig = z.isBull ? low <= trig : high >= trig
-                if not z.done and hitTrig and dirOk and locOk
+                if not z.done and not wasMit and hitTrig and isRetest and barOk and dirOk and htfOk and locOk and swpOk
                     sig := true
+                    sigKind := z.kind
                     z.done := true
-    sig
+    [sig, sigKind]
 
 // ------------------------------------------------------ Fair Value Gaps -----
 // 3-candle imbalance. Indices: candle1=[2], displacement=[1], candle3=[0].
@@ -177,37 +257,48 @@ bullFvg = low > high[2] and (not fvgReqDisp or (close[1] > open[1] and disp[1]))
 bearFvg = high < low[2]  and (not fvgReqDisp or (close[1] < open[1] and disp[1]))
 
 if showFvg and bullFvg
-    addZone(bullZones, true,  low, high[2], fvgBullCol, "FVG")   // gap: high[2] (bottom) -> low[0] (top)
+    addZone(bullZones, true,  bar_index - 2, low, high[2], fvgBullCol, "FVG")   // gap: high[2] (bottom) -> low[0] (top)
 if showFvg and bearFvg
-    addZone(bearZones, false, low[2], high, fvgBearCol, "FVG")   // gap: high[0] (bottom) -> low[2] (top)
+    addZone(bearZones, false, bar_index - 2, low[2], high, fvgBearCol, "FVG")   // gap: high[0] (bottom) -> low[2] (top)
 
 // -------------------------------------------------------- Order Blocks ------
 // Track the most recent opposite-direction candle, then claim it when a
-// structure-breaking displacement fires.
-var float lastDownHi = na
-var float lastDownLo = na
-var float lastUpHi   = na
-var float lastUpLo   = na
+// structure-breaking displacement fires. Claimed candles are cleared so two
+// displacement bars in a row can't stamp the same OB twice.
+var float lastDownHi  = na
+var float lastDownLo  = na
+var int   lastDownBar = na
+var float lastUpHi    = na
+var float lastUpLo    = na
+var int   lastUpBar   = na
 if close < open
-    lastDownHi := high
-    lastDownLo := low
+    lastDownHi  := high
+    lastDownLo  := low
+    lastDownBar := bar_index
 if close > open
-    lastUpHi := high
-    lastUpLo := low
+    lastUpHi  := high
+    lastUpLo  := low
+    lastUpBar := bar_index
 
 obBullTrig = showOb and disp and close > open and (not obReqBos or structBreakUp)
 obBearTrig = showOb and disp and close < open and (not obReqBos or structBreakDn)
 if obBullTrig and not na(lastDownHi)
-    addZone(bullZones, true, lastDownHi, lastDownLo, obBullCol, "OB")   // demand
+    addZone(bullZones, true, lastDownBar, lastDownHi, lastDownLo, obBullCol, "OB")   // demand
+    lastDownHi  := na
+    lastDownLo  := na
+    lastDownBar := na
 if obBearTrig and not na(lastUpHi)
-    addZone(bearZones, false, lastUpHi, lastUpLo, obBearCol, "OB")      // supply
+    addZone(bearZones, false, lastUpBar, lastUpHi, lastUpLo, obBearCol, "OB")        // supply
+    lastUpHi  := na
+    lastUpLo  := na
+    lastUpBar := na
 
 // --------------------------------------------- Manage zones + fire signals --
-buySig  = manageZones(bullZones)
-sellSig = manageZones(bearZones)
+[buySig, buyKind]   = manageZones(bullZones)
+[sellSig, sellKind] = manageZones(bearZones)
 
 // ------------------------------------------------------------- Plotting -----
-// location.absolute pins markers a fixed (ATR-scaled) distance from the candle,
+// Absolute (ATR-scaled) offsets pin markers a fixed distance from the candle,
 // instead of letting belowbar/abovebar stack them into far-off lanes.
 gap  = atr * markerGap
 yBelow = low  - gap                   // MSB dots — near-flush to the bar
@@ -215,8 +306,12 @@ yAbove = high + gap
 yBelowFar = low  - gap - atr * 0.12   // text labels — just outside the dots
 yAboveFar = high + gap + atr * 0.12
 
-plotshape(buySig  ? yBelowFar : na, "BUY",  shape.labelup,   location.absolute, color.new(color.green, 0), text="BUY",  textcolor=color.white, size=size.small)
-plotshape(sellSig ? yAboveFar : na, "SELL", shape.labeldown, location.absolute, color.new(color.red, 0),   text="SELL", textcolor=color.white, size=size.small)
+// Signal labels carry the POI type (BUY·OB vs BUY·FVG) so backtest review can
+// see which zone kind actually performs.
+if buySig
+    label.new(bar_index, yBelowFar, "BUY·" + buyKind, style=label.style_label_up, color=color.new(color.green, 0), textcolor=color.white, size=size.small)
+if sellSig
+    label.new(bar_index, yAboveFar, "SELL·" + sellKind, style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
 
 // Structure breaks: MSB = continuation (dot), MSS = reversal/CHoCH (label text).
 plotshape(showStruct and bullMSB ? yBelow : na, "MSB up",   shape.circle, location.absolute, color.new(color.green, 0),  size=size.tiny)
@@ -235,8 +330,9 @@ alertcondition(bullMSS, "MSS Up",   "Bullish structure shift (potential reversal
 alertcondition(bearMSS, "MSS Down", "Bearish structure shift (potential reversal down)")
 
 // ------------------------------------------------- Next buy/sell zone table -
-// Nearest demand zones at/below price (BUY) and supply zones at/above (SELL),
-// with the full entry range, the 50% mean threshold, and distance to the near edge.
+// Nearest LIVE demand zones at/below price (BUY) and supply zones at/above
+// (SELL) — spent zones (signal fired or 50% mitigated) are excluded — with the
+// full entry range, the 50% mean threshold, and distance to the near edge.
 posMap = tablePos == "Top Left" ? position.top_left : tablePos == "Bottom Right" ? position.bottom_right : tablePos == "Bottom Left" ? position.bottom_left : position.top_right
 var table zt = na
 if showTable and na(zt)
@@ -253,7 +349,8 @@ writeZoneRow(int r, string kind, float tp, float bt, float nearEdge) =>
     table.cell(zt, 3, r, empty ? "" : distPct(nearEdge), text_size=size.normal)
 
 // Render one section: its header, column labels, then the nearest `tableRows`
-// eligible zones (wantBull => demand below price, else supply above), closest first.
+// eligible zones (wantBull => live demand below price, else live supply above),
+// closest first — ranked by the near edge, the level price touches first.
 renderSection(array<Zone> zones, bool wantBull, int hdrRow, color hdrCol, string title) =>
     table.cell(zt, 0, hdrRow, title, text_size=size.normal, text_color=color.white, bgcolor=hdrCol)
     table.cell(zt, 1, hdrRow, "", bgcolor=hdrCol)
@@ -265,7 +362,7 @@ renderSection(array<Zone> zones, bool wantBull, int hdrRow, color hdrCol, string
     table.cell(zt, 3, hdrRow + 1, "Dist",          text_size=size.normal, text_color=color.gray)
     eligible = array.new<Zone>()
     for z in zones
-        if wantBull ? trigOf(z) <= close : trigOf(z) >= close
+        if not z.done and not z.mit and (wantBull ? edgeOf(z) <= close : edgeOf(z) >= close)
             array.push(eligible, z)
     for k = 0 to tableRows - 1
         r = hdrRow + 2 + k
@@ -273,10 +370,10 @@ renderSection(array<Zone> zones, bool wantBull, int hdrRow, color hdrCol, string
             writeZoneRow(r, "—", na, na, na)
         else
             bi = 0
-            best = trigOf(array.get(eligible, 0))
+            best = edgeOf(array.get(eligible, 0))
             if array.size(eligible) > 1
                 for j = 1 to array.size(eligible) - 1
-                    t = trigOf(array.get(eligible, j))
+                    t = edgeOf(array.get(eligible, j))
                     if wantBull ? t > best : t < best   // nearest = highest below / lowest above
                         best := t
                         bi := j
