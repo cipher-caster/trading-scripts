@@ -1,6 +1,6 @@
 # Mayne SMC Indicator
 
-**Version 2.2.0** · [changelog](./CHANGELOG.md)
+**Version 2.3.0** · [changelog](./CHANGELOG.md)
 
 A Pine Script v6 (TradingView) indicator that mechanically marks the entry pieces of the Trader
 Mayne Smart Money Concepts system: **order blocks, fair value gaps, market-structure bias, the
@@ -227,3 +227,5 @@ shorts in premium, enter at the POI mean threshold.
 - **Confirms with lag (not a bug).** Swings need `Swing length` bars to the right before they
   confirm, the HTF gate uses the last closed HTF bar, and signals default to bar-close
   confirmation — everything appears a few bars late rather than repainting.
+- **Standard charts only.** Heikin Ashi / Renko / Kagi / P&F / Range charts are rejected at
+  load — their synthetic OHLC would fabricate structure levels, zones, and signals.

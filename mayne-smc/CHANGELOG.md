@@ -4,6 +4,31 @@ All notable changes to the indicator and its guide. Versioning is loosely
 [semantic](https://semver.org/): MAJOR for breaking changes to signals/behaviour, MINOR for new
 features or inputs, PATCH for fixes and doc/visual tweaks.
 
+## [2.3.0] — 2026-07-26
+
+Audit pass over v2.2 — three correctness fixes plus two robustness tweaks. No new inputs.
+
+- **Fix (signals): order blocks no longer die "mitigated at birth".** The 50% mean-threshold
+  check counted the zone's own creation bar. The displacement candle that confirms an OB almost
+  always opens *inside* that OB, so most immediate OBs were flagged spent the moment they were
+  created — they could never fire a signal, never appeared in the zone table, and their boxes
+  froze instantly (a regression introduced by the 2.1 spent-zone fix; FVGs were unaffected,
+  which is why charts skewed FVG-heavy). Touches now only count **after** the creation bar,
+  matching the documented rule ("the first valid touch is the trade"). Expect more OB signals
+  and table entries than in 2.1–2.2 — that's the bug being removed, not a looser rule.
+- **Fix (HTF gate): backtests no longer lag one extra HTF bar.** The confirmed-bar fetch used
+  `[1]` + `lookahead_off`, which serves historical bars the trend from *two* HTF bars back
+  while realtime bars get one — so history ran a staler bias than live and rewrote on reload.
+  Switched to the canonical non-repaint idiom (`[1]` + `lookahead_on`): the same one-bar lag
+  everywhere; live behaviour unchanged.
+- **Fix (table): readable on dark themes.** Zone rows and the RANGE/EQ header values relied on
+  `table.cell`'s default black text, invisible on dark charts. Text colors are now explicit
+  (`chart.fg_color`; white on headers).
+- Alert messages now include `{{ticker}} {{interval}}` (and `{{close}}` on BUY/SELL), so alerts
+  fired from multiple charts are tellable apart.
+- Non-standard chart types (Heikin Ashi, Renko, Kagi, P&F, Range) are rejected with a clear
+  error instead of silently computing structure and zones off synthetic prices.
+
 ## [2.2.0] — 2026-06-11
 
 - **Zone age expiry** (new input *Max zone age*, default 500 bars): a zone untouched for that

@@ -1,7 +1,7 @@
 //@version=6
 // =============================================================================
 // Trader Mayne SMC — Order Blocks / FVGs / Buy-Sell Signals
-// Version: 2.2 (2026-06-11) — version history at the bottom of this header
+// Version: 2.3 (2026-07-26) — version history at the bottom of this header
 // =============================================================================
 // Mechanical implementation of the system distilled in this folder's
 // _SMC-System-Guide.md (Trader Mayne "Whiteboard Series"). It detects:
@@ -18,6 +18,14 @@
 // approximations of a discretionary method — backtest before trusting them.
 //
 // Version history:
+//   2.3 (2026-07-26) Audit fixes: an OB overlapped by its own displacement
+//                    candle is no longer born mitigated (the creation bar
+//                    can't consume the 50%, so immediate OBs can signal);
+//                    HTF gate uses the canonical non-repaint fetch ([1] +
+//                    lookahead_on) so history carries the same one-bar lag
+//                    as realtime; table text follows the chart theme;
+//                    alerts carry {{ticker}}/{{interval}}/{{close}};
+//                    non-standard charts (Heikin Ashi, Renko, ...) rejected.
 //   2.2 (2026-06-11) Zone age expiry: untouched zones go stale after
 //                    `Max zone age` bars (frozen box, no table, no signals).
 //   2.1 (2026-06-11) Audit fixes: spent (mitigated) zones can no longer fire
@@ -31,7 +39,7 @@
 //                    signals, zone table.
 // =============================================================================
 
-VERSION = "2.2"   // bump here + add a history line above — title/shorttitle pick it up
+VERSION = "2.3"   // bump here + add a history line above — title/shorttitle pick it up
 indicator("Trader Mayne SMC — OB / FVG / Signals v" + VERSION, shorttitle="Mayne SMC v" + VERSION, overlay=true, max_boxes_count=500, max_labels_count=500)
 
 // ---------------------------------------------------------------- Inputs ----
@@ -75,6 +83,10 @@ tableRows = input.int(3, "Zones shown per side", minval=1, maxval=6, group=gT, t
 tablePos  = input.string("Top Right", "Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"], group=gT)
 
 BOX_LEAD = 3      // bars a live zone box projects past the current bar
+
+// Synthetic-OHLC chart types would fabricate structure, zones and signals.
+if barstate.isfirst and not chart.is_standard
+    runtime.error("Use a standard candles/bars chart — Heikin Ashi, Renko, Kagi, P&F and Range bars have synthetic prices, so SMC levels and signals would be fictitious.")
 
 // ------------------------------------------------------------- Core data ----
 atr  = ta.atr(atrLen)
@@ -162,8 +174,12 @@ f_trend() =>
         _t  := -1
     _t
 
-// [1] = last confirmed HTF bar: lags one HTF bar but never repaints.
-htfTrend = request.security(syminfo.tickerid, htfTf == "" ? timeframe.period : htfTf, f_trend()[1], lookahead=barmerge.lookahead_off)
+// [1] + lookahead_on = the canonical non-repainting HTF fetch: always the last
+// CONFIRMED HTF bar, never the developing one. With lookahead_off the [1] value
+// arrives one HTF bar later on historical bars than in realtime, so backtests
+// would run a staler bias than live. The [1] offset is what makes lookahead_on
+// safe — never change one without the other.
+htfTrend = request.security(syminfo.tickerid, htfTf == "" ? timeframe.period : htfTf, f_trend()[1], lookahead=barmerge.lookahead_on)
 // Gate only engages when the selected TF is strictly HIGHER than the chart's —
 // security() on an equal/lower TF returns junk, so those silently disable it.
 htfOn = htfTf != "" and timeframe.in_seconds(htfTf) > timeframe.in_seconds(timeframe.period)
@@ -230,7 +246,10 @@ manageZones(array<Zone> zones) =>
                     box.set_right(z.bx, bar_index)   // ...but keep the box, frozen where it died
             else
                 wasMit = z.mit               // 50% already consumed on an EARLIER bar -> zone is spent
-                reached = z.isBull ? low <= mid : high >= mid
+                // Touches count only AFTER the creation bar: the displacement candle that
+                // confirms an OB usually opens inside it, so counting the creation bar's own
+                // range would mark most OBs mitigated at birth (never able to signal).
+                reached = bar_index > z.created and (z.isBull ? low <= mid : high >= mid)
                 if not z.mit and reached
                     z.mit := true
                     if freezeMit
@@ -322,12 +341,12 @@ plotshape(showStruct and bearMSS ? yAboveFar : na, "MSS down", shape.labeldown, 
 bgcolor(showTint ? (trend == 1 ? color.new(color.green, 94) : trend == -1 ? color.new(color.red, 94) : na) : na, title="Bias tint")
 
 // --------------------------------------------------------------- Alerts -----
-alertcondition(buySig,  "Mayne SMC BUY",  "Bullish POI retest in discount — long signal")
-alertcondition(sellSig, "Mayne SMC SELL", "Bearish POI retest in premium — short signal")
-alertcondition(bullMSB, "MSB Up",   "Bullish structure break (continuation)")
-alertcondition(bearMSB, "MSB Down", "Bearish structure break (continuation)")
-alertcondition(bullMSS, "MSS Up",   "Bullish structure shift (potential reversal up)")
-alertcondition(bearMSS, "MSS Down", "Bearish structure shift (potential reversal down)")
+alertcondition(buySig,  "Mayne SMC BUY",  "{{ticker}} {{interval}}: bullish POI retest in discount @ {{close}} — long signal")
+alertcondition(sellSig, "Mayne SMC SELL", "{{ticker}} {{interval}}: bearish POI retest in premium @ {{close}} — short signal")
+alertcondition(bullMSB, "MSB Up",   "{{ticker}} {{interval}}: bullish structure break (continuation)")
+alertcondition(bearMSB, "MSB Down", "{{ticker}} {{interval}}: bearish structure break (continuation)")
+alertcondition(bullMSS, "MSS Up",   "{{ticker}} {{interval}}: bullish structure shift (potential reversal up)")
+alertcondition(bearMSS, "MSS Down", "{{ticker}} {{interval}}: bearish structure shift (potential reversal down)")
 
 // ------------------------------------------------- Next buy/sell zone table -
 // Nearest LIVE demand zones at/below price (BUY) and supply zones at/above
@@ -344,9 +363,9 @@ distPct(lvl) => str.tostring(math.abs(lvl - close) / close * 100, "#.##") + "%"
 writeZoneRow(int r, string kind, float tp, float bt, float nearEdge) =>
     empty = na(tp)
     table.cell(zt, 0, r, empty ? "—" : kind, text_size=size.normal, text_color=empty ? color.gray : chart.fg_color)
-    table.cell(zt, 1, r, empty ? "" : fmtP(bt) + " – " + fmtP(tp), text_size=size.normal)
-    table.cell(zt, 2, r, empty ? "" : fmtP((tp + bt) / 2), text_size=size.normal)
-    table.cell(zt, 3, r, empty ? "" : distPct(nearEdge), text_size=size.normal)
+    table.cell(zt, 1, r, empty ? "" : fmtP(bt) + " – " + fmtP(tp), text_size=size.normal, text_color=chart.fg_color)
+    table.cell(zt, 2, r, empty ? "" : fmtP((tp + bt) / 2), text_size=size.normal, text_color=chart.fg_color)
+    table.cell(zt, 3, r, empty ? "" : distPct(nearEdge), text_size=size.normal, text_color=chart.fg_color)
 
 // Render one section: its header, column labels, then the nearest `tableRows`
 // eligible zones (wantBull => live demand below price, else live supply above),
@@ -391,8 +410,8 @@ if showTable and barstate.islast
     table.cell(zt, 2, 0, "PRICE", text_size=size.normal, text_color=color.white, bgcolor=hdr)
     table.cell(zt, 3, 0, fmtP(close), text_size=size.normal, text_color=color.white, bgcolor=hdr)
     table.cell(zt, 0, 1, "RANGE", text_size=size.normal, text_color=color.white, bgcolor=hdr)
-    table.cell(zt, 1, 1, locTxt, text_size=size.normal, bgcolor=hdr)
+    table.cell(zt, 1, 1, locTxt, text_size=size.normal, text_color=color.white, bgcolor=hdr)
     table.cell(zt, 2, 1, "EQ",    text_size=size.normal, text_color=color.white, bgcolor=hdr)
-    table.cell(zt, 3, 1, na(eq) ? "—" : fmtP(eq), text_size=size.normal, bgcolor=hdr)
+    table.cell(zt, 3, 1, na(eq) ? "—" : fmtP(eq), text_size=size.normal, text_color=color.white, bgcolor=hdr)
     renderSection(bearZones, false, 2,             color.new(color.red, 20),   "SELL ZONES (above)")
     renderSection(bullZones, true,  4 + tableRows, color.new(color.green, 20), "BUY ZONES (below)")
