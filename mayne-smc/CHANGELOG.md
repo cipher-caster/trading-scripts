@@ -4,6 +4,30 @@ All notable changes to the indicator and its guide. Versioning is loosely
 [semantic](https://semver.org/): MAJOR for breaking changes to signals/behaviour, MINOR for new
 features or inputs, PATCH for fixes and doc/visual tweaks.
 
+## [2.4.0] — 2026-07-26
+
+Backtesting release: the two features that put numbers on the signals.
+
+- **Strategy twin** (`Mayne-SMC-Strategy.pine`): the same engine as a TradingView `strategy()`
+  for the Strategy Tester. Risk-based sizing (*Risk per trade* % of equity vs the stop
+  distance), a stop/target bracket on every entry, position reversal on opposite signals, a
+  backtest date range, and per-POI-type entry IDs (`L-OB` / `L-FVG` / `S-OB` / `S-FVG`) so the
+  List of Trades shows which zone kind performs. Entries fill on the next bar's open (no
+  peeking); signals without a computable stop/target are skipped so every recorded trade has a
+  full bracket. In the strategy, *Use FVGs / Order Blocks as POIs* removes that zone type from
+  the system — backtest OB-only vs FVG-only variants. The engine block is byte-identical
+  between the two files (marked `ENGINE (shared)`): fix in one, copy to the other.
+- **RR readout + optional Min-RR gate** (new *Risk / RR* input group in both files): every
+  signal now knows its stop (zone far edge − *Stop buffer* ×ATR for longs, mirrored for
+  shorts) and target (*Target for RR*: dealing-range extreme, or nearest live opposing zone
+  falling back to the extreme). Labels append the reward:risk ("BUY·OB 2.3R"), the zone table
+  gains an **RR** column (indicative — targets move as the range/zones evolve), and *Min RR* >
+  0 suppresses signals below the threshold (default 0 = readout only, signals unchanged).
+- Docs: README gains a Backtesting section, Risk/RR input rows, and an RR column in the table
+  example; guide.html's signal walkthrough, inputs table, and honest-limits list updated to
+  match (the RR gate exists now; standard-charts-only note added); the busy-chart tip notes
+  that hiding a POI type also stops its signals.
+
 ## [2.3.0] — 2026-07-26
 
 Audit pass over v2.2 — three correctness fixes plus two robustness tweaks. No new inputs.

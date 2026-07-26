@@ -1,52 +1,48 @@
 //@version=6
 // =============================================================================
-// Trader Mayne SMC — Order Blocks / FVGs / Buy-Sell Signals
-// Version: 2.4 (2026-07-26) — version history at the bottom of this header
+// Trader Mayne SMC — Backtest Strategy (twin of Mayne-SMC-Indicator.pine)
+// Version: 2.4 (2026-07-26) — versioned in lockstep with the indicator
 // =============================================================================
-// Mechanical implementation of the system distilled in this folder's
-// _SMC-System-Guide.md (Trader Mayne "Whiteboard Series"). It detects:
-//   - Market structure + trend bias (MSB/MSS on confirmed swings)
-//   - Dealing range -> premium / discount / equilibrium (the 50%)
-//   - Fair Value Gaps (3-candle imbalance, optional displacement filter)
-//   - Order Blocks (last opposite candle before a structure-breaking move)
-//   - BUY / SELL signals when price retests a same-direction POI in the
-//     correct half of the range (discount for longs, premium for shorts)
-//   - Optional gates: HTF bias agreement (guide §4, the master filter) and
-//     a prior liquidity sweep (guide §2, run + rejection)
+// strategy() port of the indicator's engine so TradingView's Strategy Tester
+// can score the signals: win rate, profit factor, drawdown, equity curve —
+// and per-POI-type results (entry IDs are L-OB / L-FVG / S-OB / S-FVG, so the
+// List of Trades tells you which zone kind actually performs).
 //
-// Study/testing tool, NOT financial advice. Signals are mechanical
-// approximations of a discretionary method — backtest before trusting them.
+// How it trades:
+//   - A signal (same engine, same gates as the indicator) enters at the NEXT
+//     bar's open (process_orders_on_close=false — no peeking), sized so the
+//     distance to the stop risks `Risk per trade` % of current equity. Risk
+//     is measured from the signal bar's CLOSE (the fill proxy); the RR
+//     label/gate is computed at the zone trigger, so when the close pulled
+//     away from the trigger the realized RR comes in under the labeled one.
+//     That's the honest accounting — sizing off the trigger would over-risk.
+//   - Every entry ships a bracket: stop = zone far edge -/+ the ATR buffer,
+//     limit = the RR target (range extreme or nearest opposing zone).
+//   - Opposite signals reverse the position; same-direction signals while
+//     already positioned are skipped (pyramiding=0).
+//   - Signals with no computable stop/target are SKIPPED (the indicator can
+//     still label such retests when Min RR = 0) — every backtest trade has a
+//     full bracket, so the Tester's numbers mean what they say.
+//   - Margin is not simulated (TV default), so a tight stop can imply
+//     notional > equity. If you would never lever, keep `Risk per trade`
+//     small and sanity-check position sizes in the List of Trades.
+//   - Commission defaults to 0.05%/side; set your venue's real fee in
+//     Properties. Bars that span both stop and target resolve by TV's OHLC
+//     heuristic — enable Bar Magnifier (paid plans) for finer fills.
 //
-// Version history:
-//   2.4 (2026-07-26) Risk/RR: per-signal stop (far edge ± ATR buffer) and
-//                    target (range extreme or nearest opposing zone) drive an
-//                    RR readout on labels + table and an optional Min-RR
-//                    gate. New strategy twin (Mayne-SMC-Strategy.pine) runs
-//                    the same engine with risk-sized bracket orders in the
-//                    Strategy Tester; the shared block is marked ENGINE.
-//   2.3 (2026-07-26) Audit fixes: an OB overlapped by its own displacement
-//                    candle is no longer born mitigated (the creation bar
-//                    can't consume the 50%, so immediate OBs can signal);
-//                    HTF gate uses the canonical non-repaint fetch ([1] +
-//                    lookahead_on) so history carries the same one-bar lag
-//                    as realtime; table text follows the chart theme;
-//                    alerts carry {{ticker}}/{{interval}}/{{close}};
-//                    non-standard charts (Heikin Ashi, Renko, ...) rejected.
-//   2.2 (2026-06-11) Zone age expiry: untouched zones go stale after
-//                    `Max zone age` bars (frozen box, no table, no signals).
-//   2.1 (2026-06-11) Audit fixes: spent (mitigated) zones can no longer fire
-//                    on a later revisit; HTF gate self-disables when the
-//                    selected TF is not strictly higher than the chart's.
-//   2.0 (2026-06-11) Retest fix (no signal on the zone-creation bar), OB
-//                    dedup (a candle can be claimed once), table hides spent
-//                    zones, HTF bias gate, bar-close confirmation, liquidity
-//                    sweep filter, true box origins, BUY·OB/SELL·FVG labels.
-//   1.0 (2026-06-07) Initial: structure/bias, FVGs, OBs, premium/discount,
-//                    signals, zone table.
+// Differences from the indicator, on purpose:
+//   - "Use FVGs / Order Blocks as POIs" removes that zone type from the
+//     system entirely — backtest an OB-only or FVG-only variant.
+//   - No zone table, no BUY/SELL labels, no alertconditions (the Tester's
+//     trade markers and order-fill alerts replace them).
+//
+// SYNC POLICY: everything between the ENGINE markers is byte-identical to the
+// same block in Mayne-SMC-Indicator.pine. Fix in one file, copy to the other.
+// Study/testing tool, NOT financial advice.
 // =============================================================================
 
-VERSION = "2.4"   // bump here + add a history line above — title/shorttitle pick it up
-indicator("Trader Mayne SMC — OB / FVG / Signals v" + VERSION, shorttitle="Mayne SMC v" + VERSION, overlay=true, max_boxes_count=500, max_labels_count=500)
+VERSION = "2.4"
+strategy("Trader Mayne SMC Strategy v" + VERSION, shorttitle="Mayne SMC Strat v" + VERSION, overlay=true, initial_capital=10000, commission_type=strategy.commission.percent, commission_value=0.05, pyramiding=0, process_orders_on_close=false, max_boxes_count=500, max_labels_count=500)
 
 // ---------------------------------------------------------------- Inputs ----
 gS = "Market Structure / Bias"
@@ -55,43 +51,43 @@ atrLen    = input.int(14, "ATR length (displacement)", minval=1, group=gS)
 dispMult  = input.float(1.5, "Displacement: candle range >= ATR x", minval=0.1, step=0.1, group=gS, tooltip="What counts as a strong/displacement candle.")
 showBias  = input.bool(false, "Show range high/low + equilibrium lines", group=gS)
 showStruct = input.bool(true, "Show MSB / MSS markers", group=gS, tooltip="MSB = structure break in the trend direction (continuation). MSS = first break against the trend (potential reversal).")
-markerGap  = input.float(0.1, "Marker distance from candle (×ATR)", minval=0, step=0.05, group=gS, tooltip="How far BUY/SELL/MSB/MSS markers sit from the candle. Lower = closer/flush; 0 = right at the high/low.")
-showTint  = input.bool(false, "Tint background by bias", group=gS, tooltip="Colours every bar green/red by trend. Off keeps the chart clean so BUY/SELL labels stand out.")
+markerGap  = input.float(0.1, "Marker distance from candle (×ATR)", minval=0, step=0.05, group=gS, tooltip="How far MSB/MSS markers sit from the candle. Lower = closer/flush; 0 = right at the high/low.")
+showTint  = input.bool(false, "Tint background by bias", group=gS, tooltip="Colours every bar green/red by trend.")
 
 gF = "Fair Value Gaps"
-showFvg    = input.bool(true, "Show FVGs", group=gF)
+showFvg    = input.bool(true, "Use FVGs as POIs (and draw them)", group=gF, tooltip="Off = FVG zones are neither drawn nor traded — backtest an OB-only system.")
 fvgReqDisp = input.bool(true, "Require displacement on middle candle", group=gF)
 fvgBullCol = input.color(color.new(color.blue, 90), "Bullish FVG", group=gF)
 fvgBearCol = input.color(color.new(color.purple, 90), "Bearish FVG", group=gF)
 
 gO = "Order Blocks"
-showOb   = input.bool(true, "Show Order Blocks", group=gO)
+showOb   = input.bool(true, "Use Order Blocks as POIs (and draw them)", group=gO, tooltip="Off = OB zones are neither drawn nor traded — backtest an FVG-only system.")
 obReqBos = input.bool(true, "Only OBs whose move breaks structure", group=gO)
 obBullCol = input.color(color.new(color.green, 90), "Bullish OB (demand)", group=gO)
 obBearCol = input.color(color.new(color.red, 90), "Bearish OB (supply)", group=gO)
 
 gZ = "Zone display"
 freezeMit = input.bool(true, "Stop extending zones once mitigated", group=gZ, tooltip="A zone freezes (stops stretching to the present) once price trades into its 50% mean threshold. Keeps spent zones from blocking the chart; only untouched zones reach the live bar.")
-zoneMaxAge = input.int(500, "Max zone age (bars, 0 = never)", minval=0, group=gZ, tooltip="A zone untouched for this many bars goes stale: its box freezes, it leaves the table, and it can no longer signal. Old POIs decay — the dealing range resets every MSB, so ancient zones aren't real retest candidates, especially on low timeframes (500 bars is ~5 days on M15 but ~10 months on 12h, so LTF zones expire faster in wall-clock time, as they should). 0 = zones live until invalidated (old behaviour).")
+zoneMaxAge = input.int(500, "Max zone age (bars, 0 = never)", minval=0, group=gZ, tooltip="A zone untouched for this many bars goes stale: its box freezes and it can no longer signal. 0 = zones live until invalidated.")
 
 gG = "Signals"
 useHalf   = input.bool(true, "Require correct half (discount/premium)", group=gG, tooltip="Longs only in discount, shorts only in premium — the Mayne rule.")
 entryMid  = input.bool(true, "Trigger at zone 50% (mean threshold)", group=gG, tooltip="On = signal when price reaches the middle of the OB/FVG. Off = signal on first touch of the zone edge.")
-htfTf     = input.timeframe("", "HTF bias timeframe (blank = off)", group=gG, tooltip="The master filter (guide §4): only fire signals that agree with the trend read on this higher timeframe. E.g. run the chart on M15 with this set to 240 (H4). Must be HIGHER than the chart timeframe — equal or lower silently disables the gate. Uses the last CONFIRMED HTF bar, so it does not repaint but lags by one HTF bar. Blank = no HTF gate.")
-confirmClose = input.bool(true, "Confirm signals on bar close", group=gG, tooltip="On = signals (and alerts) only fire when the bar closes, so they never appear mid-bar and vanish. Off = fire intra-bar on first touch (earlier, but can repaint within the live bar).")
-useSweep  = input.bool(false, "Require liquidity sweep first", group=gG, tooltip="Guide §2: only take a long if price recently RAN the range low and closed back above it (rejection) — mirrored for shorts. Mechanical approximation: wick through the unbroken swing level + close back inside, within the lookback. Cuts signal count hard; off by default.")
+htfTf     = input.timeframe("", "HTF bias timeframe (blank = off)", group=gG, tooltip="The master filter (guide §4): only fire signals that agree with the trend read on this higher timeframe. Must be HIGHER than the chart timeframe — equal or lower silently disables the gate. Uses the last CONFIRMED HTF bar, so it does not repaint but lags by one HTF bar. Blank = no HTF gate.")
+confirmClose = input.bool(true, "Confirm signals on bar close", group=gG, tooltip="On = signals only fire when the bar closes; entries then fill on the next bar's open. Off = fire intra-bar on first touch (earlier, but can repaint within the live bar).")
+useSweep  = input.bool(false, "Require liquidity sweep first", group=gG, tooltip="Guide §2: only take a long if price recently RAN the range low and closed back above it (rejection) — mirrored for shorts. Cuts signal count hard; off by default.")
 sweepBars = input.int(20, "Sweep lookback (bars)", minval=1, maxval=200, group=gG, tooltip="How recent the sweep must be for the filter above.")
 maxZones  = input.int(40, "Max zones tracked per side", minval=5, maxval=120, group=gG)
 
 gR = "Risk / RR"
-stopBuf    = input.float(0.25, "Stop buffer beyond far edge (×ATR)", minval=0, step=0.05, group=gR, tooltip="Stop for a long = zone bottom − this ×ATR (short: zone top + it). Feeds the RR readout, the Min-RR gate, and the strategy twin's bracket exits.")
-targetMode = input.string("Range extreme", "Target for RR", options=["Range extreme", "Nearest opposing zone"], group=gR, tooltip="Range extreme = dealing-range high (longs) / low (shorts). Nearest opposing zone = near edge of the closest live supply (longs) / demand (shorts) beyond the entry, falling back to the range extreme when there is none.")
-minRR      = input.float(0, "Min RR to allow a signal (0 = off)", minval=0, step=0.25, group=gR, tooltip="Suppress signals whose reward:risk at the trigger is below this. RR = (target − entry) ÷ (entry − stop), entry = the trigger price. 0 keeps every signal; labels and the table show the RR either way. When no target is computable (no range yet), a nonzero gate blocks the signal.")
+stopBuf    = input.float(0.25, "Stop buffer beyond far edge (×ATR)", minval=0, step=0.05, group=gR, tooltip="Stop for a long = zone bottom − this ×ATR (short: zone top + it). Also the bracket stop on every trade.")
+targetMode = input.string("Range extreme", "Target for RR", options=["Range extreme", "Nearest opposing zone"], group=gR, tooltip="Range extreme = dealing-range high (longs) / low (shorts). Nearest opposing zone = near edge of the closest live supply (longs) / demand (shorts) beyond the entry, falling back to the range extreme when there is none. Also the bracket limit on every trade.")
+minRR      = input.float(0, "Min RR to allow a signal (0 = off)", minval=0, step=0.25, group=gR, tooltip="Suppress signals whose reward:risk at the trigger is below this. RR = (target − entry) ÷ (entry − stop), entry = the trigger price.")
 
-gT = "Zone Table"
-showTable = input.bool(true, "Show next buy/sell zone table", group=gT)
-tableRows = input.int(3, "Zones shown per side", minval=1, maxval=6, group=gT, tooltip="How many of the nearest demand (buy) and supply (sell) zones to list.")
-tablePos  = input.string("Top Right", "Position", options=["Top Right", "Top Left", "Bottom Right", "Bottom Left"], group=gT)
+gB = "Backtest"
+riskPct   = input.float(1.0, "Risk per trade (% of equity)", minval=0.05, maxval=100, step=0.25, group=gB, tooltip="Position size = this % of current equity divided by the entry→stop distance. Compounds with the equity curve.")
+dateStart = input.time(timestamp("1 Jan 2018 00:00 +0000"), "Backtest start", group=gB)
+dateEnd   = input.time(timestamp("1 Jan 2035 00:00 +0000"), "Backtest end", group=gB)
 
 // Synthetic-OHLC chart types would fabricate structure, zones and signals.
 if barstate.isfirst and not chart.is_standard
@@ -373,15 +369,8 @@ if obBearTrig and not na(lastUpHi)
 gap  = atr * markerGap
 yBelow = low  - gap                   // MSB dots — near-flush to the bar
 yAbove = high + gap
-yBelowFar = low  - gap - atr * 0.12   // text labels — just outside the dots
+yBelowFar = low  - gap - atr * 0.12   // MSS labels — just outside the dots
 yAboveFar = high + gap + atr * 0.12
-
-// Signal labels carry the POI type (BUY·OB vs BUY·FVG) so backtest review can
-// see which zone kind actually performs.
-if buySig
-    label.new(bar_index, yBelowFar, "BUY·" + buyKind + (na(buyRR) ? "" : " " + str.tostring(buyRR, "#.#") + "R"), style=label.style_label_up, color=color.new(color.green, 0), textcolor=color.white, size=size.small)
-if sellSig
-    label.new(bar_index, yAboveFar, "SELL·" + sellKind + (na(sellRR) ? "" : " " + str.tostring(sellRR, "#.#") + "R"), style=label.style_label_down, color=color.new(color.red, 0), textcolor=color.white, size=size.small)
 
 // Structure breaks: MSB = continuation (dot), MSS = reversal/CHoCH (label text).
 plotshape(showStruct and bullMSB ? yBelow : na, "MSB up",   shape.circle, location.absolute, color.new(color.green, 0),  size=size.tiny)
@@ -391,84 +380,26 @@ plotshape(showStruct and bearMSS ? yAboveFar : na, "MSS down", shape.labeldown, 
 
 bgcolor(showTint ? (trend == 1 ? color.new(color.green, 94) : trend == -1 ? color.new(color.red, 94) : na) : na, title="Bias tint")
 
-// --------------------------------------------------------------- Alerts -----
-alertcondition(buySig,  "Mayne SMC BUY",  "{{ticker}} {{interval}}: bullish POI retest in discount @ {{close}} — long signal")
-alertcondition(sellSig, "Mayne SMC SELL", "{{ticker}} {{interval}}: bearish POI retest in premium @ {{close}} — short signal")
-alertcondition(bullMSB, "MSB Up",   "{{ticker}} {{interval}}: bullish structure break (continuation)")
-alertcondition(bearMSB, "MSB Down", "{{ticker}} {{interval}}: bearish structure break (continuation)")
-alertcondition(bullMSS, "MSS Up",   "{{ticker}} {{interval}}: bullish structure shift (potential reversal up)")
-alertcondition(bearMSS, "MSS Down", "{{ticker}} {{interval}}: bearish structure shift (potential reversal down)")
+// -------------------------------------------------------------- Orders ------
+inRange = time >= dateStart and time <= dateEnd
 
-// ------------------------------------------------- Next buy/sell zone table -
-// Nearest LIVE demand zones at/below price (BUY) and supply zones at/above
-// (SELL) — spent zones (signal fired or 50% mitigated) are excluded — with the
-// full entry range, the 50% mean threshold, and distance to the near edge.
-posMap = tablePos == "Top Left" ? position.top_left : tablePos == "Bottom Right" ? position.bottom_right : tablePos == "Bottom Left" ? position.bottom_left : position.top_right
-var table zt = na
-if showTable and na(zt)
-    zt := table.new(posMap, 5, 6 + 2 * tableRows, border_width=1, frame_width=1, frame_color=color.new(color.gray, 40))
+// Every trade needs the full bracket: signals without a computable stop AND
+// target are skipped here (the indicator can still label them when Min RR = 0).
+// buySig and sellSig can't fire on the same bar (dirOk needs opposite trends).
+// Sizing measures risk from `close` (≈ the next-open fill), not the zone
+// trigger the RR label uses — fills happen at market, not at the trigger.
+if buySig and inRange and strategy.position_size <= 0 and not na(buyStop) and not na(buyTgt)
+    riskPerUnit = close - buyStop
+    if riskPerUnit > 0 and buyTgt > close
+        qty = strategy.equity * riskPct / 100 / riskPerUnit
+        if qty > 0
+            strategy.entry("L-" + buyKind, strategy.long, qty=qty)
+            strategy.exit("XL-" + buyKind, from_entry="L-" + buyKind, stop=buyStop, limit=buyTgt)
 
-fmtP(p) => str.tostring(p, format.mintick)
-distPct(lvl) => str.tostring(math.abs(lvl - close) / close * 100, "#.##") + "%"
-
-writeZoneRow(int r, string kind, float tp, float bt, float nearEdge, float rr) =>
-    empty = na(tp)
-    table.cell(zt, 0, r, empty ? "—" : kind, text_size=size.normal, text_color=empty ? color.gray : chart.fg_color)
-    table.cell(zt, 1, r, empty ? "" : fmtP(bt) + " – " + fmtP(tp), text_size=size.normal, text_color=chart.fg_color)
-    table.cell(zt, 2, r, empty ? "" : fmtP((tp + bt) / 2), text_size=size.normal, text_color=chart.fg_color)
-    table.cell(zt, 3, r, empty ? "" : distPct(nearEdge), text_size=size.normal, text_color=chart.fg_color)
-    table.cell(zt, 4, r, empty ? "" : na(rr) ? "—" : str.tostring(rr, "#.#") + "R", text_size=size.normal, text_color=chart.fg_color)
-
-// Render one section: its header, column labels, then the nearest `tableRows`
-// eligible zones (wantBull => live demand below price, else live supply above),
-// closest first — ranked by the near edge, the level price touches first. RR
-// is what a trade at the zone's trigger would offer now (opp = target zones).
-renderSection(array<Zone> zones, array<Zone> opp, bool wantBull, int hdrRow, color hdrCol, string title) =>
-    table.cell(zt, 0, hdrRow, title, text_size=size.normal, text_color=color.white, bgcolor=hdrCol)
-    table.cell(zt, 1, hdrRow, "", bgcolor=hdrCol)
-    table.cell(zt, 2, hdrRow, "", bgcolor=hdrCol)
-    table.cell(zt, 3, hdrRow, "", bgcolor=hdrCol)
-    table.cell(zt, 4, hdrRow, "", bgcolor=hdrCol)
-    table.cell(zt, 0, hdrRow + 1, "Type",          text_size=size.normal, text_color=color.gray)
-    table.cell(zt, 1, hdrRow + 1, "Entry (range)", text_size=size.normal, text_color=color.gray)
-    table.cell(zt, 2, hdrRow + 1, "50%",           text_size=size.normal, text_color=color.gray)
-    table.cell(zt, 3, hdrRow + 1, "Dist",          text_size=size.normal, text_color=color.gray)
-    table.cell(zt, 4, hdrRow + 1, "RR",            text_size=size.normal, text_color=color.gray)
-    eligible = array.new<Zone>()
-    for z in zones
-        if not z.done and not z.mit and (wantBull ? edgeOf(z) <= close : edgeOf(z) >= close)
-            array.push(eligible, z)
-    for k = 0 to tableRows - 1
-        r = hdrRow + 2 + k
-        if array.size(eligible) == 0
-            writeZoneRow(r, "—", na, na, na, na)
-        else
-            bi = 0
-            best = edgeOf(array.get(eligible, 0))
-            if array.size(eligible) > 1
-                for j = 1 to array.size(eligible) - 1
-                    t = edgeOf(array.get(eligible, j))
-                    if wantBull ? t > best : t < best   // nearest = highest below / lowest above
-                        best := t
-                        bi := j
-            z = array.get(eligible, bi)
-            array.remove(eligible, bi)   // remove first so the block ends on a void call
-            writeZoneRow(r, z.kind, z.top, z.bot, wantBull ? z.top : z.bot, rrOf(trigOf(z), stopOf(z), targetFor(z, opp), z.isBull))
-
-if showTable and barstate.islast
-    biasTxt = trend == 1 ? "Bullish" : trend == -1 ? "Bearish" : "—"
-    biasCol = trend == 1 ? color.new(color.green, 0) : trend == -1 ? color.new(color.red, 0) : color.gray
-    locTxt = not na(eq) ? (inDiscount ? "Discount" : inPremium ? "Premium" : "Equilibrium") : "—"
-    hdr = color.new(color.blue, 20)
-    table.cell(zt, 0, 0, "BIAS",  text_size=size.normal, text_color=color.white, bgcolor=hdr)
-    table.cell(zt, 1, 0, biasTxt, text_size=size.normal, text_color=biasCol,    bgcolor=hdr)
-    table.cell(zt, 2, 0, "PRICE", text_size=size.normal, text_color=color.white, bgcolor=hdr)
-    table.cell(zt, 3, 0, fmtP(close), text_size=size.normal, text_color=color.white, bgcolor=hdr)
-    table.cell(zt, 0, 1, "RANGE", text_size=size.normal, text_color=color.white, bgcolor=hdr)
-    table.cell(zt, 1, 1, locTxt, text_size=size.normal, text_color=color.white, bgcolor=hdr)
-    table.cell(zt, 2, 1, "EQ",    text_size=size.normal, text_color=color.white, bgcolor=hdr)
-    table.cell(zt, 3, 1, na(eq) ? "—" : fmtP(eq), text_size=size.normal, text_color=color.white, bgcolor=hdr)
-    table.cell(zt, 4, 0, "", bgcolor=hdr)
-    table.cell(zt, 4, 1, "", bgcolor=hdr)
-    renderSection(bearZones, bullZones, false, 2,             color.new(color.red, 20),   "SELL ZONES (above)")
-    renderSection(bullZones, bearZones, true,  4 + tableRows, color.new(color.green, 20), "BUY ZONES (below)")
+if sellSig and inRange and strategy.position_size >= 0 and not na(sellStop) and not na(sellTgt)
+    riskPerUnit = sellStop - close
+    if riskPerUnit > 0 and sellTgt < close
+        qty = strategy.equity * riskPct / 100 / riskPerUnit
+        if qty > 0
+            strategy.entry("S-" + sellKind, strategy.short, qty=qty)
+            strategy.exit("XS-" + sellKind, from_entry="S-" + sellKind, stop=sellStop, limit=sellTgt)

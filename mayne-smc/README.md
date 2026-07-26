@@ -1,12 +1,15 @@
 # Mayne SMC Indicator
 
-**Version 2.3.0** · [changelog](./CHANGELOG.md)
+**Version 2.4.0** · [changelog](./CHANGELOG.md)
 
 A Pine Script v6 (TradingView) indicator that mechanically marks the entry pieces of the Trader
 Mayne Smart Money Concepts system: **order blocks, fair value gaps, market-structure bias, the
 dealing-range 50%, and BUY/SELL signals**, with optional HTF-bias and liquidity-sweep gates.
 
 - **`Mayne-SMC-Indicator.pine`** — paste into TradingView's Pine Editor (install steps below).
+- **`Mayne-SMC-Strategy.pine`** — the same engine as a TradingView **strategy**: risk-sized
+  entries, stop/target brackets, per-POI-type trade IDs for the Strategy Tester. See
+  [Backtesting](#backtesting-the-strategy-file).
 - **`guide.html`** — open in any browser for an interactive, illustrated walkthrough of the whole
   Mayne SMC method (candle diagrams for every concept) plus how to read this indicator. Start there
   if the concepts are new.
@@ -94,7 +97,7 @@ input can hard-enforce the immediate pair (e.g. H4 over M15), but the read above
 
 | Element | On by default? | Meaning |
 |---|---|---|
-| **"BUY·OB" / "SELL·FVG" labels** | yes | A signal fired (rules below) — the suffix tells you which POI type triggered it (order block vs fair value gap), so you can review which kind actually performs. The thing you actually trade off. |
+| **"BUY·OB 2.3R" / "SELL·FVG 1.8R" labels** | yes | A signal fired (rules below) — the suffix names the POI type that triggered it (order block vs fair value gap), and the trailing number is the trade's reward:risk at the trigger (*Risk / RR* inputs). The thing you actually trade off. |
 | **Blue / purple boxes** | yes | Fair Value Gaps — blue = bullish, purple = bearish. |
 | **Green / red boxes** | yes | Order Blocks — green = bullish (demand), red = bearish (supply). |
 | **Dots above/below bars** | yes | **MSB** — structure break in the trend direction (continuation). Green dot below = bullish, red dot above = bearish. |
@@ -120,7 +123,8 @@ actionable, a frozen short box = history.
 
 If the chart still feels busy, the **boxes** are the next thing to thin out: raise *Swing length*
 and *Displacement >= ATR x*, or turn off *Show FVGs* / *Show Order Blocks* to leave only the
-BUY/SELL labels.
+BUY/SELL labels — though note a hidden POI type stops firing signals too (in the strategy file
+that's deliberate: it lets you backtest OB-only / FVG-only variants).
 
 ---
 
@@ -134,13 +138,13 @@ headed next without eyeballing the boxes.
 BIAS   Bullish        PRICE   42,180
 RANGE  Discount       EQ      41,900
 SELL ZONES (above)
- Type  Entry (range)     50%      Dist
- OB    42,900 – 43,200   43,050   1.71%
- FVG   43,400 – 43,560   43,480   2.89%
+ Type  Entry (range)     50%      Dist    RR
+ OB    42,900 – 43,200   43,050   1.71%   2.6R
+ FVG   43,400 – 43,560   43,480   2.89%   1.9R
 BUY ZONES (below)
- Type  Entry (range)     50%      Dist
- FVG   41,650 – 41,790   41,720   0.92%
- OB    41,050 – 41,350   41,200   1.97%
+ Type  Entry (range)     50%      Dist    RR
+ FVG   41,650 – 41,790   41,720   0.92%   3.1R
+ OB    41,050 – 41,350   41,200   1.97%   2.2R
 ```
 
 - **Type** — OB (order block) or FVG (fair value gap).
@@ -150,6 +154,9 @@ BUY ZONES (below)
   signal fires at. A strong zone shouldn't trade past its 50%.
 - **Dist** — how far the **near edge** of the zone is from current price, in % (i.e. how far price
   has to travel to first touch the zone).
+- **RR** — the reward:risk a trade triggered at that zone would offer right now (stop = far edge
+  ± ATR buffer, target per *Target for RR*). Indicative: targets move as the range and zones
+  evolve; the label shows the final number when a signal actually fires.
 
 Zones are listed **nearest-first**, ranked by the near edge (the level price touches first), and
 **only live zones are shown** — a zone disappears from the table once it has fired a signal or been
@@ -179,6 +186,9 @@ A **BUY** prints only when **all** of these line up on the same bar:
 5. **(Optional) A liquidity sweep happened first** — if *Require liquidity sweep first* is on,
    price must have recently run the range low and closed back above it (run + rejection, §2)
    within the lookback. Off by default; cuts signals hard.
+6. **(Optional) The RR clears the bar** — if *Min RR* > 0, the trade's reward:risk at the
+   trigger (stop = zone far edge ± ATR buffer, target = range extreme or nearest opposing
+   zone, per the *Risk / RR* inputs) must be at least that. Default 0 = readout only, no gate.
 
 **SELL** is the exact mirror: bearish bias + premium + retest into a bearish OB/FVG (+ HTF
 bearish / range-high sweep if the optional gates are on).
@@ -208,7 +218,37 @@ shorts in premium, enter at the POI mean threshold.
 | **Confirm signals on bar close** | on | Signals/alerts wait for the bar to close — no intra-bar flicker. Off = fire on first touch. |
 | **Require liquidity sweep first** | off | Only signal after a recent run + rejection of the range low (longs) / high (shorts). The §2 sweep rule; strict, so opt-in. |
 | **Sweep lookback (bars)** | 20 | How recent that sweep must be. |
+| **Stop buffer beyond far edge (×ATR)** | 0.25 | Give the stop more room past the zone's far edge (feeds the RR readout and the strategy's brackets). |
+| **Target for RR** | Range extreme | Switch to *Nearest opposing zone* for more conservative targets (first obstacle instead of the full range). |
+| **Min RR to allow a signal** | 0 (off) | Suppress signals that don't offer at least this reward:risk at the trigger. |
 | **Max zone age (bars)** | 500 | Expire zones untouched for this long (frozen box, no table, no signals). Lower it to declutter LTF charts faster; 0 = never expire. |
+
+---
+
+## Backtesting (the strategy file)
+
+`Mayne-SMC-Strategy.pine` is the indicator's engine wrapped in a TradingView **strategy**, so the
+Strategy Tester can put numbers on the signals. Install it exactly like the indicator (paste into
+the Pine Editor → Add to chart), then open the **Strategy Tester** tab.
+
+- **Same signals, same gates.** Inputs mirror the indicator (the *Zone Table* group is dropped; a
+  *Backtest* group is added). One semantic change: *Use FVGs / Order Blocks as POIs* removes that
+  zone type from the system entirely, so you can score an OB-only or FVG-only variant.
+- **Entries** fill on the bar **after** a signal confirms (no peeking), sized so the distance to
+  the stop risks *Risk per trade* % of current equity (compounding). Risk is measured from the
+  signal bar's close (the fill proxy), while the RR label is computed at the zone trigger — so a
+  trade's realized RR can come in under the labeled number when price closed away from the
+  trigger.
+- **Exits** are a bracket attached to every entry: stop = zone far edge ± the ATR buffer, limit =
+  the RR target. Opposite signals reverse the position; signals with no computable stop/target
+  are skipped, so every recorded trade has a full bracket.
+- **Per-POI-type results:** entry IDs are `L-OB` / `L-FVG` / `S-OB` / `S-FVG` — read the List of
+  Trades (or export CSV) to see which zone kind actually performs.
+- **Honest numbers:** set your venue's real commission in Properties (default 0.05%/side). Margin
+  isn't simulated, so a tight stop can imply notional > equity — keep *Risk per trade* small if
+  you'd never lever. A wide bar that spans both stop and target resolves by TradingView's OHLC
+  heuristic; enable **Bar Magnifier** (paid plans) for finer intrabar fills. Results are
+  estimates, not promises.
 
 ---
 
@@ -221,9 +261,11 @@ shorts in premium, enter at the POI mean threshold.
 - **The sweep filter is mechanical, not the full §2 definition.** It checks run + rejection on the
   current unbroken swing level only — it can't judge equal highs/lows further back, sweep quality,
   or whether displacement followed (OBs require displacement anyway; FVGs optionally).
-- **No RR gate, no SMT / kill-zone / Judas logic.** Those are the discretionary edges; the script
-  can't judge them. A signal means "a POI is being retested in the right context" — not "take
-  this trade."
+- **No SMT / kill-zone / Judas logic.** Those are the discretionary edges; the script can't
+  judge them. And while there is now an RR readout/gate and a backtest bracket, its stops and
+  targets are mechanical conventions (zone edge ± ATR, range extreme / next zone) — sane
+  defaults, not Mayne's read of an individual setup. A signal means "a POI is being retested in
+  the right context" — not "take this trade."
 - **Confirms with lag (not a bug).** Swings need `Swing length` bars to the right before they
   confirm, the HTF gate uses the last closed HTF bar, and signals default to bar-close
   confirmation — everything appears a few bars late rather than repainting.

@@ -643,8 +643,11 @@
         (2) price is in discount, (3) price retests a bullish OB or FVG at its 50% mean threshold —
         a genuine retest: the bar that created the zone can't fire it, and a zone whose 50% was
         already consumed earlier is spent; plus the optional gates: (4) the HTF trend agrees, if
-        <i>HTF bias timeframe</i> is set, and (5) a recent sweep of the range low, if
-        <i>Require liquidity sweep first</i> is on. <b>SELL</b> is the mirror. Signals default to
+        <i>HTF bias timeframe</i> is set, (5) a recent sweep of the range low, if
+        <i>Require liquidity sweep first</i> is on, and (6) the reward:risk at the trigger clears
+        <i>Min RR</i>, if set — stop just past the zone's far edge, target at the range extreme or
+        nearest opposing zone; the BUY/SELL label carries the number either way (e.g.
+        "BUY·OB 2.3R"). <b>SELL</b> is the mirror. Signals default to
         <b>bar-close confirmation</b> (no mid-bar flicker; alerts fire on the close). Each zone fires
         once; a zone is deleted when price closes through it.</p>
 
@@ -659,8 +662,14 @@
         <tr><td>HTF bias timeframe</td><td>blank (off)</td><td>Only allow signals agreeing with this higher TF's trend — the §4 master filter. Must be higher than the chart TF.</td></tr>
         <tr><td>Confirm signals on bar close</td><td>on</td><td>No intra-bar flicker; off = fire on first touch.</td></tr>
         <tr><td>Require liquidity sweep first</td><td>off</td><td>Only signal after a recent run + rejection of the range low/high — the §2 sweep rule. Strict, so opt-in.</td></tr>
+        <tr><td>Stop buffer beyond far edge (×ATR)</td><td>0.25</td><td>Give the stop more room past the zone's far edge (feeds the RR readout and the strategy's brackets).</td></tr>
+        <tr><td>Target for RR</td><td>Range extreme</td><td>Switch to "Nearest opposing zone" for first-obstacle targets instead of the full range.</td></tr>
+        <tr><td>Min RR to allow a signal</td><td>0 (off)</td><td>Suppress signals that don't offer at least this reward:risk at the trigger.</td></tr>
         <tr><td>Max zone age (bars)</td><td>500</td><td>Expire untouched zones (frozen box, no table, no signals). Lower to declutter LTF charts; 0 = never.</td></tr>
       </table>
+      <p>To put numbers on these rules, the repo also ships <code>Mayne-SMC-Strategy.pine</code> —
+        the same engine as a TradingView strategy (risk-sized entries, stop/target brackets,
+        per-POI-type trade IDs) for the Strategy Tester. See the README's Backtesting section.</p>
       <details>
         <summary>Honest limits — what it does NOT do</summary>
         <ul>
@@ -670,8 +679,12 @@
           <li><b>The sweep filter is mechanical, not the full §2 definition.</b> It checks run +
             rejection on the current unbroken swing level only — not older equal highs/lows, sweep
             quality, or the displacement leg.</li>
-          <li><b>No RR gate, no SMT / kill-zone logic.</b> A signal means "a POI is being retested in
-            the right context" — not "take this trade."</li>
+          <li><b>No SMT / kill-zone logic.</b> The RR readout/gate uses mechanical stops and targets
+            (zone edge ± ATR, range extreme / next zone) — sane defaults, not Mayne's read of an
+            individual setup. A signal means "a POI is being retested in the right context" — not
+            "take this trade."</li>
+          <li><b>Standard charts only.</b> Heikin Ashi / Renko / Kagi / P&amp;F / Range charts are
+            rejected — their synthetic OHLC would fabricate structure and zones.</li>
           <li><b>Confirms with lag (not a bug).</b> Swings need <code>Swing length</code> bars to
             confirm, the HTF gate uses the last closed HTF bar, and signals default to bar-close
             confirmation — late beats repainting.</li>
