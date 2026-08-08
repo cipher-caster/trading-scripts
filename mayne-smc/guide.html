@@ -127,8 +127,9 @@
   /* indicator zone-table mock */
   .zt{font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; max-width:430px;
     border:1px solid var(--border); border-radius:6px; overflow:hidden; margin:12px 0}
-  .zt div{display:grid; grid-template-columns:1.1fr 2fr 1.2fr 1fr; border-top:1px solid var(--border)}
+  .zt div{display:grid; grid-template-columns:0.9fr 2fr 1.2fr 1fr 0.7fr; border-top:1px solid var(--border)}
   .zt div:first-child{border-top:none}
+  .zt div.sec{grid-template-columns:1fr}
   .zt span{padding:5px 8px; border-left:1px solid var(--border)}
   .zt span:first-child{border-left:none}
   .zt .hd{background:var(--accent); color:#fff}
@@ -148,10 +149,15 @@
     <a href="#range">3 · Dealing range</a>
     <a href="#bias">4 · HTF bias</a>
     <a href="#poi">5 · Entries (OB/FVG)</a>
-    <a href="#frameworks">6 · Frameworks</a>
-    <a href="#workflow">7 · Workflow</a>
-    <a href="#reference">8 · Quick reference</a>
-    <a href="#indicator">9 · Reading the indicator</a>
+    <a href="#po3">6 · Power of three</a>
+    <a href="#frameworks">7 · Frameworks</a>
+    <a href="#workflow">8 · Workflow</a>
+    <a href="#entrymodels">9 · Entry models</a>
+    <a href="#risk">10 · Stops, targets &amp; RR</a>
+    <a href="#scaling">11 · Scaling in</a>
+    <a href="#notrade">12 · When not to trade</a>
+    <a href="#reference">13 · Quick reference</a>
+    <a href="#indicator">14 · Reading the indicator</a>
     <button class="themebtn" id="themebtn">Toggle light / dark</button>
   </nav>
 
@@ -182,8 +188,9 @@
         <li><b>Price moves from liquidity to liquidity.</b> The market ping-pongs between buy-side
           (above) and sell-side (below) liquidity. If you can't point at where price is going and
           why, you don't have a setup.</li>
-        <li><b>Top-down, always.</b> Minimum two timeframes. The HTF gives bias / structure / points
-          of interest; the LTF gives entries, stops, targets. Never trade off the LTF alone.</li>
+        <li><b>Top-down, always.</b> Two charts is the shorthand; the method is four jobs — bias,
+          context, setup, entry (§9). The HTF gives bias / structure / points of interest; the LTF
+          gives entries, stops, targets. Never trade off the LTF alone.</li>
         <li><b>Price is fractal (the Russian doll).</b> Inside a weekly range is a daily range,
           inside that an hourly range. The best trades are where multiple timeframes align.</li>
         <li><b>Markets seek efficiency; asymmetry pays.</b> Inefficient one-directional moves (gaps)
@@ -299,11 +306,78 @@
         </div>
         <div>
           <div class="chart"><svg data-diagram="eqh"></svg></div>
-          <div class="cap">Equal highs / lows — liquidity rests just beyond. Prime sweep targets.</div>
+          <div class="cap">Equal highs / lows — liquidity rests just beyond. The best-stocked pools on the chart; whether they are your target or your entry is context (below).</div>
         </div>
       </div>
       <p class="muted">A <b>HTF sweep</b> is significant and the move out of it should be powerful. A
         LTF counter-trend sweep against a strong HTF trend carries less weight — wait for the realign.</p>
+      <h3>Equal highs &amp; equal lows — stronger or weaker? <span class="pill">Ep11</span></h3>
+      <p>The old price-action argument: do repeated touches of a level make it <i>stronger</i>
+        (respected support / resistance) or <i>weaker</i> (each test uses it up)? Mayne's answer is
+        that <b>both sides are wrong</b> — the question itself is retail framing. Multiple touches
+        don't strengthen or weaken anything. All that is happening is <b>liquidity building up at
+        that level</b>, and that liquidity is going to get taken.</p>
+      <div class="chart"><svg data-diagram="eq-touches"></svg></div>
+      <div class="cap">Each rejection convinces more traders the level is an iron wall, so they short
+        it and stack stops just above. The third touch does not make it stronger — it makes the pool
+        above it <b>bigger</b>. That is the fuel, and it is why price rips through right when the
+        level looks most reliable.</div>
+      <p class="muted">Read it as an institution: you cannot fill size without an accumulation of
+        resting orders. Where do they accumulate? Above equal highs, below equal lows. A "strong
+        resistance level" is simply the best-stocked pool on the chart.</p>
+
+      <h4>Identifying them</h4>
+      <ul>
+        <li><b>Two or more swings at approximately the same level.</b> Ticks don't matter — 69,420
+          and 69,415 are equal highs. ICT calls them <i>relatively</i> equal for that reason.</li>
+        <li><b>Swings, not single candles.</b> Ideally a proper 3-candle swing (§1) that moved away
+          meaningfully, then another one back at the same level.</li>
+        <li><b>Time and space between them is better.</b> Two swing highs days apart on a HTF chart
+          have had far longer to accumulate orders than two adjacent candles.</li>
+        <li><b>Double top, triple top, double bottom</b> are the same thing under a different name.
+          Notice how often the third bottom of a "triple bottom" runs the first two — that run
+          <i>is</i> the low.</li>
+      </ul>
+
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="eq-engineered"></svg></div>
+          <div class="cap"><b>Engineered liquidity</b> — equal lows left just above your order block.
+            It looks like price is front-running the zone, so you buy early; then it smokes the equal
+            lows <i>into</i> the OB and moves.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="eq-cycle"></svg></div>
+          <div class="cap">The sweep of equal lows leaves the FVG that becomes your <b>entry</b>, and
+            the equal highs left behind become the <b>target</b>. Entry and target from the same
+            cycle.</div>
+        </div>
+      </div>
+
+      <details>
+        <summary>Rules — trading equal highs / lows</summary>
+        <ul>
+          <li><b>They are liquidity, not support or resistance.</b> Above EQH sits buy-side; below
+            EQL sits sell-side. Mark them as pools, never as walls.</li>
+          <li><b>Entry or target? Context decides</b> — the same context as everything else: HTF
+            bias, dealing range, premium or discount. Bullish range, longing from discount → the EQH
+            in premium is your <b>target</b>. Bearish range → those same EQH in premium are where you
+            look for the <b>reversal</b>.</li>
+          <li><b>They are not an immediate signal.</b> Clean equal highs say price will eventually go
+            there, not that it goes there now. Timing comes from context.</li>
+          <li><b>Not always a sweep.</b> Equal highs run in a strong uptrend can simply be a pit
+            stop — the level was a target, and price keeps going. Only context tells you which.</li>
+          <li><b>The sweep builds the entry.</b> Running EQH/EQL typically leaves an FVG, order block
+            or breaker on the displacement back in — that is what you actually enter on, not the
+            level itself.</li>
+          <li><b>They are the liquidity in the range framework.</b> EQH/EQL inside the dealing range
+            = internal range liquidity (entries); outside it = external range liquidity (targets).
+            The IRL → ERL → IRL cycle is usually an equal-lows → equal-highs cycle.</li>
+        </ul>
+      </details>
+      <p class="muted">Where the accumulation phase of an AMD (§6) leaves equal highs and equal lows
+        on both sides of the range, you get the full picture in one structure: the manipulation runs
+        one side for your entry, the distribution leg runs the other for your target.</p>
     </section>
 
     <section id="range">
@@ -474,22 +548,140 @@
       </div>
     </section>
 
-    <section id="frameworks">
-      <h2>6 · Frameworks</h2>
+    <section id="po3">
+      <h2>6 · Power of three <span class="pill">AMD · the Judas swing</span></h2>
+      <p class="lead">Before price makes a move it fakes the other way first. That fake-out is not
+      noise, it is the mechanism, and it repeats on every chart and every timeframe:
+      <b>accumulation → manipulation → distribution</b>. Name the phase you are in and the fake-out
+      stops costing you money and starts handing you entries.</p>
 
-      <h3>Power of Three (PO3) / AMD</h3>
-      <div class="chart"><svg data-diagram="po3"></svg></div>
-      <div class="cap"><b>Accumulation</b> (sideways build-up) → <b>Manipulation</b> (the fake-out /
-        stop-hunt the wrong way) → <b>Distribution</b> (the real move). Enter on manipulation, take
-        profit in distribution.</div>
+      <h3>The three phases</h3>
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="p3-amd-bull"></svg></div>
+          <div class="cap"><b>Bullish AMD</b> — price ranges (A), breaks the range low to trigger
+            sell stops (M), then displaces back inside and distributes up (D).</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="p3-amd-bear"></svg></div>
+          <div class="cap"><b>Bearish AMD</b> — same machine inverted: the manipulation runs
+            <i>above</i> the range into buy stops, then price distributes down.</div>
+        </div>
+      </div>
+      <p class="muted">Manipulation is the sweep / SFP from §2 wearing a different name. ICT calls it
+        the <b>Judas swing</b> — the move that betrays the direction price actually wants to go. In a
+        range, liquidity is building on <i>both</i> sides; the manipulation picks the side it wants
+        to fill against.</p>
+
+      <details>
+        <summary>Rules — reading AMD live</summary>
+        <ul>
+          <li><b>A — accumulation.</b> Sideways. No clear direction, by definition (that is what a
+            range <i>is</i>). Buy stops pile above it, sell stops below it.</li>
+          <li><b>M — manipulation.</b> A break of the accumulation range that runs one of those
+            pools. To get long, price must go <i>down</i> to find sellers; to get short, up to find
+            buyers.</li>
+          <li><b>Displacement is the confirmation</b> — a strong close back inside the accumulation
+            range, often leaving an FVG. No displacement = treat it as a genuine break, not a Judas
+            swing.</li>
+          <li><b>D — distribution.</b> The real leg, in the intended direction. This is where the
+            money is made; A and M only tell you where to get on.</li>
+          <li><b>Which side breaks? Not the range — the HTF bias (§4).</b> Bullish HTF: a breakdown
+            that gets reclaimed is manipulation, expect the AMD to resolve up. Bearish HTF: a
+            breakout that gets reclaimed is manipulation, expect it to resolve down.</li>
+          <li><b>Invalidation</b> is losing the level you reclaimed, or trading back through the
+            manipulation extreme.</li>
+        </ul>
+      </details>
+
+      <h3>Every candle is a power of three</h3>
+      <div class="chart"><svg data-diagram="p3-olhc"></svg></div>
+      <div class="cap">Every candle has an open, a high, a low and a close. It always starts at the
+        open and ends at the close, but the high and low swap places: a clean bullish candle runs
+        <b>open → low → high → close</b>, a clean bearish one <b>open → high → low → close</b>.
+        The open is accumulation, the <i>wick</i> is manipulation, the <i>body</i> is distribution.</div>
+      <p class="muted">Practical consequence: <b>enter in the wick, hold through the body, exit near
+        the close.</b> The wicks are where you get filled, not where you get trapped. Not every
+        candle prints in that order — a bearish candle can make its low first — but the ones that
+        give you a clean power of three usually do.</p>
+
+      <h3>The four schematics worth learning <span class="pill">Ep10</span></h3>
+      <p>ICT-style AMD gets elaborate (standard deviations, precise times of day). Mayne's position:
+        that is probably overkill. Four schematics carry the concept. Each one has an <b>anchor</b> —
+        the open you measure the manipulation against.</p>
+      <table>
+        <tr><th>Schematic</th><th>Anchor</th><th>Accumulation</th><th>Manipulation</th><th>Distribution</th></tr>
+        <tr><td>Weekly</td><td>Weekly open</td><td>Sun / Mon, sometimes Tue</td><td>Tue–Wed (the low or high of the week)</td><td>Thu–Fri</td></tr>
+        <tr><td>Daily</td><td>Daily open</td><td>Asian range (overnight EST)</td><td>New York open, 9:30 EST</td><td>Rest of the session / afternoon</td></tr>
+        <tr><td>Single candle</td><td>That candle's open (H4, H1, M15…)</td><td>Early in the candle</td><td>Mid-formation</td><td>Remainder of the body</td></tr>
+        <tr><td>Visual</td><td>None — read it off structure</td><td>Days to months of range</td><td>Break out of the range + reclaim</td><td>The trend leg that follows</td></tr>
+      </table>
 
       <div class="grid2">
-        <div class="card">
-          <h4>Judas Swing</h4>
-          <p class="muted" style="margin:0">The manipulation arm of AMD — the fake move that betrays
-            you. Often at the session start: price dips below the open to run SSL, then reverses and
-            trends all day.</p>
+        <div>
+          <div class="chart"><svg data-diagram="p3-weekly"></svg></div>
+          <div class="cap"><b>Weekly AMD</b> — bullish week: trade below the weekly open early,
+            reclaim it by Tue/Wed, and the low of the week is probably in. Thu–Fri distribute.</div>
         </div>
+        <div>
+          <div class="chart"><svg data-diagram="p3-daily"></svg></div>
+          <div class="cap"><b>Daily AMD</b> — Asian range accumulates, New York open dives below the
+            daily open to run sell stops, the reclaim puts in the low of the day.</div>
+        </div>
+      </div>
+      <p class="muted">Same logic, different clock. Bearish week: price trades <i>above</i> the
+        weekly open early, gets back below it Tue/Wed, and the high of the week is in. The
+        <b>single-candle AMD</b> is identical again but has no session rules of thumb — the only
+        anchor is that candle's own open, so mark it on the LTF and watch for the break-and-reclaim
+        inside the candle's life.</p>
+
+      <div class="chart"><svg data-diagram="p3-visual"></svg></div>
+      <div class="cap"><b>Visual AMD</b> — Mayne's own label. A macro range of weeks or months, one
+        clean fake-out beyond it, an aggressive reclaim with displacement, then the trend. Extremely
+        common on Bitcoin and altcoin bottoms and tops.</div>
+      <p class="muted">The visual AMD does not have to fit inside one candle of any timeframe. You
+        read it straight off the chart: accumulate, fake out, go. It layers cleanly with fibs — the
+        displacement leg gives you the dealing range, and the pullback into the OTE / FVG is the
+        entry.</p>
+
+      <h3>Layering it onto the framework</h3>
+      <div class="chart"><svg data-diagram="p3-sweep-ob"></svg></div>
+      <div class="cap">AMD is not a separate system — it is a <i>timing layer</i> on top of §§1–5.
+        HTF bias says long. The manipulation leg sweeps sell-side liquidity <b>into a HTF order
+        block in discount</b>. Displacement back inside confirms the Judas swing, and the FVG it
+        leaves is the entry on the distribution leg.</div>
+      <details>
+        <summary>Rules — trading an AMD</summary>
+        <ol>
+          <li><b>Bias first.</b> Decide whether the next weekly / daily / H4 candle should be green
+            or red using the HTF read (§4). That decides which way the AMD resolves. Without it you
+            are guessing.</li>
+          <li><b>Mark the anchor</b> — weekly, daily or that candle's open — and the accumulation
+            range around it.</li>
+          <li><b>Wait for the break of the range</b> in the direction <i>against</i> your bias. That
+            is the candidate manipulation, and it is the discount (or premium) you wanted.</li>
+          <li><b>Demand displacement back through the anchor.</b> Reclaiming the open with a strong
+            close is confirmation. Enter on the FVG or order block that displacement leaves.</li>
+          <li><b>Stack it.</b> Manipulation into an OB, at the OTE, sweeping equal lows, inside the
+            HTF discount — the more of the framework that lines up on the same level, the better the
+            trade. AMD adds one more layer, it does not replace any of them.</li>
+          <li><b>Target the distribution leg</b> — external range liquidity on the far side, held
+            through the body of the candle, not scalped at the first internal pool.</li>
+        </ol>
+      </details>
+      <p class="muted"><b>Don't force it.</b> The rules of thumb are rules of thumb: a bullish week
+        can print its high on Monday. If the schematic isn't there — the high of the week formed
+        early while you're bullish, or the Asian range is a mess — that week or that day is simply
+        not an AMD trade. Take the setup another way or don't take it.</p>
+    </section>
+
+    <section id="frameworks">
+      <h2>7 · Frameworks</h2>
+
+      <p class="lead">The supporting concepts that sit around the core system. AMD and the Judas
+        swing have their own section (§6); these are the rest.</p>
+
+      <div class="grid2">
         <div class="card">
           <h4>Kill Zones</h4>
           <p class="muted" style="margin:0">Timing windows within a session (New York, London, Asia)
@@ -509,15 +701,17 @@
             <tr><td>1 : 1</td><td>50%</td></tr>
             <tr><td>2 : 1</td><td>33%</td></tr>
             <tr><td>3 : 1</td><td>25%</td></tr>
+            <tr><td>5 : 1</td><td>17%</td></tr>
           </table>
         </div>
       </div>
-      <p class="muted">Mayne wins roughly high-30s to mid-40s % but is profitable because trades are
-        2:1 and 3:1. Map entry / stop / target before taking a trade and require ≥ 2:1.</p>
+      <p class="muted">Mayne's win rate runs <b>40–60% long-run</b> (48% last year) — profitable only
+        because trades are 2:1 and 3:1. Map entry / stop / target before taking a trade and require
+        ≥ 2:1. Full risk treatment in §10.</p>
     </section>
 
     <section id="workflow">
-      <h2>7 · The complete workflow <span class="pill">repeatable process</span></h2>
+      <h2>8 · The complete workflow <span class="pill">repeatable process</span></h2>
       <p class="lead">The end-to-end routine, run top-down every time.</p>
       <ol>
         <li><b>HTF bias (Weekly → Daily).</b> Read structure on the weekly (HH/HL or LH/LL?), locate
@@ -527,17 +721,647 @@
           Longs need discount; shorts need premium; never equilibrium.</li>
         <li><b>Liquidity read.</b> What did price just take? Name the <b>next</b> pool (your target —
           always external range liquidity on the far side). Check the RR is ≥ 2:1. If not, stop here.</li>
-        <li><b>Drop to the LTF and wait for the re-sync.</b> Inside the HTF discount/premium zone, watch
-          the counter-trend LTF shift: MSS then MSB in the HTF direction. That's congruence.</li>
+        <li><b>Step down for the re-sync — H4/H1 first.</b> Inside the HTF discount/premium zone, the
+          shift must be visible on the H4 or H1 (MSB + FVG, OB, breaker or SFP) <i>before</i> you open
+          the execution chart: MSS then MSB in the HTF direction. That's congruence. Going from HTF
+          bias straight to the 5m is the single most common misread of this process (§9).</li>
         <li><b>Entry model (OB / breaker / FVG).</b> Entry at the 50% mean threshold (OB/breaker) or
-          gap 50% (FVG); stop tight or loose; target the external liquidity from step 3.</li>
+          gap 50% (FVG); target the external liquidity from step 3. Stop by trade type, not by
+          geometry: <b>reversal</b> → beyond the H4/H1 zone (expect several LTF attempts to fail
+          inside it); <b>continuation</b> → just beyond the LTF swing (§10).</li>
         <li><b>Manage and re-run.</b> Don't close early at internal liquidity. Re-establish HTF bias on
           cadence; restart whenever the HTF structure shifts.</li>
       </ol>
+
+      <h3>The four-step process <span class="pill">Ep12</span></h3>
+      <p>Same routine, formalised. The low timeframe is for <b>execution, not decisions</b> — every
+        decision is already made by the time you open it. Four steps, always in this order, one job each.</p>
+      <table>
+        <tr><th>Step</th><th>Timeframe</th><th>Job</th><th>What you leave with</th></tr>
+        <tr><td>1</td><td>Weekly → Daily</td><td>Bias &amp; direction</td><td>Long-only or short-only, plus the HTF ranges, OBs and liquidity marked on the chart</td></tr>
+        <tr><td>2</td><td>H4</td><td>Context</td><td>Where you are in the daily range: premium/discount, OTE, equal highs/lows, AMD, the H4 POI</td></tr>
+        <tr><td>3</td><td>H1</td><td>The setup</td><td>Nothing — until price actually trades into that POI</td></tr>
+        <tr><td>4</td><td>M5</td><td>Entry trigger</td><td>The fill, the stop, and nothing else</td></tr>
+      </table>
+      <p class="muted">The timeframes are interchangeable as long as they stay evenly spaced and you run all
+        four: Daily → H4 → H1 → M15 → M1 works, so does H4 → H1/M30 → M15/M5 → M1. Skipping a step is what
+        breaks it, not the choice of charts. The six steps above map onto these: workflow 1–2 = step 1,
+        workflow 3 = step 2, workflow 4 = step 3, workflow 5 = step 4.</p>
+
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="td-daily-pullback"></svg></div>
+          <div class="cap">Step 1, second half — weekly bullish but the daily still prints LH/LL into HTF
+            demand. The pullback isn't finished. <b>No longs, no shorts</b>; wait.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="td-daily-sync"></svg></div>
+          <div class="cap">The daily shifts inside that zone — the pullback is done and the daily has
+            re-synced with the weekly. <i>Now</i> step 2 starts.</div>
+        </div>
+      </div>
+      <p class="muted">Weekly ranging = no bias = no trade. Mark the weekly and daily ranges, OBs and
+        liquidity in different colours as you go, so that on the execution chart you don't short straight
+        into a weekly demand zone you'd forgotten was there.</p>
+
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="td-h4-context"></svg></div>
+          <div class="cap">Step 2 — mark the map, take nothing. Equilibrium, OTE, the equal highs you'll
+            target, the H4 POI you'll trade. "Look at the map before you enter the maze."</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="td-h1-wait"></svg></div>
+          <div class="cap">Step 3 — the H1's only job is <b>waiting</b> for price to trade into that POI.
+            Hours or days. Set alerts. No tag, no trade.</div>
+        </div>
+      </div>
+
+      <details>
+        <summary>Rules — running the four steps</summary>
+        <ul>
+          <li><b>Step 1 (W/D):</b> weekly structure gives direction — broke a high = bullish, broke a low =
+            bearish, ranging = stand down. Then read the daily <i>inside</i> that: daily downtrend under a
+            bullish weekly = pullback still in progress, expect it to go lower and mitigate something first;
+            daily MSS/uptrend = pullback complete, the higher low is being put in.</li>
+          <li><b>Step 2 (H4):</b> repeat the second half of step 1 one level down — where are we in the
+            daily range? Premium/discount, equilibrium, OTE, order blocks, the OB that caused the MSB,
+            equal highs/lows, AMD, fair value gaps. A few minutes' work. <b>You are not entering here.</b></li>
+          <li><b>Step 3 (H1):</b> do nothing but wait for price to reach one of those marked levels. The
+            session AMD is also visible here. Most people fail by dropping to the M5 at this point, seeing
+            something that looks like a setup and getting smoked.</li>
+          <li><b>Step 4 (M5):</b> inside the H4 zone, look for an MSB in the HTF direction with
+            displacement — that leaves an FVG, and almost always an OB and breaker with it. Entry on the
+            pullback into it.</li>
+          <li><b>Stop from the HTF, target from the HTF.</b> The LTF buys you a pinpoint entry and nothing
+            else. Invalidation is the H4 POI, not the M5 low — one MSB inside a big HTF zone can fail and
+            the second attempt work. Targets are the H4 equal highs, the daily range high, then the weekly
+            range high.</li>
+          <li>Each step contributes one piece. <b>You cannot take a trade off one of them alone.</b></li>
+        </ul>
+      </details>
+      <p class="muted">If the stop below the H4 POI looks like it ruins the RR, you are targeting the wrong
+        thing — the target is external HTF liquidity, not the nearest LTF swing.</p>
     </section>
 
+
+    <section id="entrymodels">
+      <h2>9 · Entry models <span class="pill">step 4 · execution</span></h2>
+      <p class="lead">Two entry models and a time-based variant. They are the same pattern on different
+      charts, and they all live in <b>step 4</b> of the four-step process — they do not work in a vacuum.
+      If steps 1–3 aren't done, none of this is a setup.</p>
+
+      <h3>The 5-minute model <span class="pill">Ep13</span></h3>
+      <p>Five steps. All of them, in this order, or you don't have the trade. In six words:
+        <b>zone · structure · displacement · FVG · stop · target.</b></p>
+      <div class="chart"><svg data-diagram="em-m5-model"></svg></div>
+      <div class="cap">(1) price <i>trades into</i> the HTF zone → (2) M5 MSB in the HTF direction →
+        (3) displacement → (4) the gap it leaves is the entry, taken on the pullback → (5) stop under the
+        M5 low, target from the HTF.</div>
+      <div class="card">
+        <ol style="margin:0">
+          <li><b>Zone tag.</b> Price must trade <i>into</i> the HTF POI — not near it. Could take hours or
+            days; it may never come. Then there's no trade.</li>
+          <li><b>M5 market structure break</b> in the direction you want. Bullish bias: the M5 is in a
+            downtrend inside your zone, you want its last lower high taken. Bearish: the last higher low.
+            This doubles as a filter on the zone itself — if price just keeps making LL/LH inside it, the
+            level isn't being respected.</li>
+          <li><b>Displacement.</b> The break must come with a displacement candle. It does three things:
+            confirms the break isn't a fake-out, <i>creates the FVG</i>, and tells you institutional
+            sponsorship is on your side.</li>
+          <li><b>Pull back to the FVG and enter.</b> The gap is the entry, not the break. Don't chase the
+            displacement candle — price nearly always returns. Market order, limit order, or wait for a
+            reaction at the gap: personal preference.</li>
+          <li><b>Stop and target.</b> Stop above/below the M5 swing that preceded the break, or beyond the
+            HTF zone. Target is HTF liquidity, minimum <b>2:1</b>.</li>
+        </ol>
+      </div>
+      <p class="muted">The FVG <b>alone</b> is enough for this model. An OB or breaker stacked on it is
+        better (§5's unicorn), but not required. Displacement can be one candle or several — two adjacent
+        FVGs on the break-leg count.</p>
+
+      <h4>When it doesn't work</h4>
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="em-no-tag"></svg></div>
+          <div class="cap">No zone tag. Price stalls above it and turns. It doesn't matter how clean the
+            M5 break looks — <b>no tag, no setup</b>.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="em-no-displacement"></svg></div>
+          <div class="cap">Break without displacement — overlapping candles, no gap left behind, nothing
+            to enter on. Occasionally still works; far lower odds.</div>
+        </div>
+      </div>
+      <p class="muted">Third failure mode: the setup exists but doesn't offer <b>2:1</b> — typical when
+        you're taking a continuation leg already close to the target. Skip it. You will watch skipped
+        trades work; that's the filter doing its job.</p>
+
+      <h3>The 15-minute model <span class="pill">Ep14</span></h3>
+      <p>Identical model, one chart up. Break of structure in the HTF direction, FVG, entry on the
+        pullback, stop below the M15 low or beyond the H4/H1 zone. Nothing new to learn — the only thing
+        that changes is the trade-off.</p>
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="em-m5-noise"></svg></div>
+          <div class="cap">M5 inside one HTF zone: several textbook MSB+FVG setups fail before the real
+            turn. Take every one and it's death by a thousand cuts.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="em-m15-clean"></svg></div>
+          <div class="cap">The same stretch on M15 — the failed triggers become wicks. One break, one
+            FVG, one entry. Later and higher, but you weren't in the two that failed.</div>
+        </div>
+      </div>
+      <table>
+        <tr><th></th><th>M5 model</th><th>M15 model</th></tr>
+        <tr><td>Confirmation</td><td>Earliest, weakest</td><td>Later, stronger</td></tr>
+        <tr><td>Entry price</td><td>Better</td><td>Worse</td></tr>
+        <tr><td>Stop width</td><td>Tighter</td><td>Wider</td></tr>
+        <tr><td>Reward:risk</td><td>Best when it holds</td><td>Lower, but fewer failed attempts</td></tr>
+        <tr><td>Screen time</td><td>New candle every 5 min — locked in</td><td>Alerts and check-ins</td></tr>
+      </table>
+      <p>Which one is a question about <i>you</i>, not the market: how much time you have at the charts,
+        whether you're a sprinter or a long-distance runner. Going down a timeframe always buys a tighter
+        setup and pays for it with weaker confirmation.</p>
+
+      <h4>These are all the same model</h4>
+      <p>Mayne's publicly-posted "H12 / H1" setups are this process compressed, not a different system:
+        H12 ≈ daily (two H12 candles = one daily), and the weekly and H4 reads are still happening, just
+        not shown. The pairs line up like this:</p>
+      <table>
+        <tr><th>Named pair</th><th>Is really</th><th>Model on</th></tr>
+        <tr><td>H12 → H1</td><td>Weekly → Daily → H4 → H1</td><td>H1 (Mayne's own default)</td></tr>
+        <tr><td>H4 → M15</td><td>Weekly/Daily → H4 → H1 → M15</td><td>M15</td></tr>
+        <tr><td>H1 → M5</td><td>… → H4 → H1 → M5</td><td>M5</td></tr>
+      </table>
+      <p class="muted">The pattern also prints on the H4, the daily and the weekly. The chart you enter on
+        is free; the requirement is that your analysis sits <b>decently higher</b> than your entry. Daily
+        analysis with an H4 entry is too close together; daily analysis with an H1 entry is fine.</p>
+
+      <h3>The clarification: you can't time a reversal off the M5 alone <span class="pill">Ep14</span></h3>
+      <p>A viewer's comment on Ep13 — "you're not going to time the daily reversal on the five-minute
+        chart" — is <b>correct as stated</b>, and Mayne's answer refines how both models are applied. The
+        missing step was between HTF bias and the model: you need the <b>H4 or H1</b> to show the turn
+        first — an MSB with an FVG, an order block, a breaker, or an SFP. Only then do you drop to M15/M5
+        and time it. You never go from HTF bias straight to the execution chart.</p>
+      <p>The same clarification splits the stop rule in two, and the two setup types with it:</p>
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="em-stop-reversal"></svg></div>
+          <div class="cap"><b>Reversal</b> — you're timing the HTF turn, so expect several failed LTF
+            attempts inside the zone. Your invalidation is the <b>H4/H1 POI</b>, not the M5 low. Wider
+            stop, smaller size, best entry when it works.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="em-stop-cont"></svg></div>
+          <div class="cap"><b>Continuation</b> — the HTF has already shifted, so the LTF low <i>is</i> a
+            real invalidation. Stop tucks under it. Tighter, higher probability, worse entry.</div>
+        </div>
+      </div>
+      <p class="muted">Once the daily has shifted and you're heading for external liquidity, every H4/H1
+        OB and FVG on the way up is a continuation setup — run the same model inside each one.</p>
+
+      <h3>The Silver Bullet <span class="pill">time-based</span></h3>
+      <p>An ICT model: the same sequence, gated by the clock. Inside a one-hour window, price
+        <b>sweeps liquidity, breaks structure, creates a fair value gap, then trades the other way</b> —
+        which is the entry model plus a session-scale AMD (Asian accumulation → session-open manipulation
+        → distribution through the rest of the day).</p>
+      <div class="chart"><svg data-diagram="em-silver-bullet"></svg></div>
+      <div class="cap">Sweep → MSS with displacement → FVG → entry on the retest, all inside the window.
+        Nothing new; the clock is the extra filter.</div>
+      <table>
+        <tr><th>Window</th><th>Rationale</th></tr>
+        <tr><td>3 to 4 a.m.</td><td>Right after the Asian session ends</td></tr>
+        <tr><td>10 to 11 a.m.</td><td>One hour after the New York open — the most common one</td></tr>
+        <tr><td>2 to 3 p.m.</td><td>Right before the market closes</td></tr>
+      </table>
+      <p class="muted">All three are quoted <b>New York time</b> — the transcript's words: "These are all
+        New York time. Okay, so this is Eastern Standard Time." (Mayne's closing recap misstates them as
+        "8 to 11:00 a.m. New York time"; the three windows given in the body of the episode are the ones
+        above.) The premise is that institutional algorithms are more active then; Mayne's own position on
+        that premise is "if that sounds like a bunch of mumbo jumbo BS, I have no comment" — but the times
+        line up with real volume, and his own testing shows a 5-minute model that already agrees with the
+        HTF has a <b>higher hit rate</b> inside the window.</p>
+      <p class="muted"><b>Crypto caveat.</b> These windows come from futures and FX. Crypto trades 24/7 and
+        doesn't adhere to kill zones nearly as much — though 10–11 a.m. is still a high-volatility slot for
+        crypto, and the gap is closing as crypto institutionalises. Treat the window as a bonus filter, not
+        a requirement.</p>
+
+      <h3>Mechanical vs discretionary</h3>
+      <table>
+        <tr><th>Mechanical — no judgment</th><th>Discretionary — your call</th></tr>
+        <tr><td>All five steps, in order</td><td>Which HTF zone counts as significant</td></tr>
+        <tr><td>Price must trade into the zone</td><td>M5 vs M15 vs H1 for the entry</td></tr>
+        <tr><td>Break must be in the HTF direction</td><td>Whether the H4/H1 turn is convincing enough</td></tr>
+        <tr><td>Entry is the FVG, on the pullback</td><td>Market vs limit vs waiting for a reaction at the gap</td></tr>
+        <tr><td>Reversal → stop beyond the HTF zone</td><td>Whether you're calling it a reversal or a continuation</td></tr>
+        <tr><td>Minimum 2:1, else no trade</td><td>Partials, trailing, where you scale out</td></tr>
+        <tr><td>Targets come from the HTF, not the LTF</td><td>Taking a counter-trend bounce at all</td></tr>
+      </table>
+      <details>
+        <summary>Rules — the counter-trend exception</summary>
+        <p>Mayne shows one trade where the weekly and daily are both bearish and he takes a <b>long</b>:
+          price had swept the weekly range low with a weekly + daily SFP, so external liquidity was taken
+          and the draw was to internal liquidity above — a bounce toward where the weekly lower high would
+          form. That is a genuine trade, and it breaks the rule this guide has stated everywhere else.</p>
+        <p class="muted">His own guardrails on it: <b>"I don't think you guys should be looking for these
+          types of trades early on. Only trade directly with the high time frame trend."</b> The rigidity
+          is deliberate for learners. If you do take one, it is counter-trend — take profit on the way up,
+          don't hold it for the full HTF target. Everything else about the trade is unchanged: same
+          top-down read, same model, same stop logic.</p>
+      </details>
+
+      <h3>Non-negotiables for step 4</h3>
+      <div class="card">
+        <ol style="margin:0">
+          <li>Steps 1–3 first. The model in isolation is a coin flip.</li>
+          <li>No zone tag → no trade. No displacement → very likely no trade. No 2:1 → no trade.</li>
+          <li>Enter at the FVG, not on the displacement candle. <b>Plan, wait, execute</b> — people lose
+            in the middle part.</li>
+          <li>Reversal stop = beyond the HTF POI. Continuation stop = beyond the LTF swing.</li>
+          <li>Entries are LTF; <b>targets are HTF</b>. Take partials at internal liquidity if you like,
+            but don't close the position at the nearest M5 swing.</li>
+        </ol>
+      </div>
+</section>
+
+    <section id="risk">
+      <h2>10 · Stops, targets &amp; RR <span class="pill">risk first</span></h2>
+      <p class="lead">You can have the perfect entry and still lose money — the entry is one third of
+      the trade. This section is the other two thirds plus the maths that lets you lose more than half
+      your trades and still make money.</p>
+
+      <h3>The stop goes where the idea dies</h3>
+      <p>One line: <b>your stop equals your invalidation.</b> Not a fixed number of points, not under a
+        round number, not wherever gives you the reward:risk you wanted. Ask what <i>validated</i> the
+        setup — HTF bias, HTF point of interest, the LTF model (MSS/MSB + displacement + FVG). The stop
+        sits beyond whatever price must break to make all of that wrong.</p>
+
+      <div class="chart"><svg data-diagram="rk-stop-invalid"></svg></div>
+      <div class="cap">Reversal model: entry inside the HTF POI, stop <b>beyond the whole POI</b>. Price
+        can trade deeper into the zone and still reverse — you are not wrong until it closes through the
+        far edge.</div>
+
+      <p class="muted">Two placements, same logic. <i>Reversal</i> — stop past the far edge of the HTF
+        POI. <i>Continuation</i> — stop past the swing low/high that produced the structure break you
+        entered on. Lose that structure, lose the trade.</p>
+
+      <h3>Don't park it where everyone else's is</h3>
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="rk-stop-crowded"></svg></div>
+          <div class="cap">Stop tucked under the obvious equal lows — that pool is exactly what gets
+            hunted. You get taken out on the sweep, then price rips without you.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="rk-stop-room"></svg></div>
+          <div class="cap">Same candles, stop past the zone's far edge with breathing room for wicks,
+            spread and slippage. The sweep is the <i>reason you're long</i>, not your invalidation.</div>
+        </div>
+      </div>
+      <p class="muted">Never put the stop on the exact low tick of the order block. A dollar of
+        overshoot for one second should not end the trade. Build that buffer in <b>before</b> you size
+        the position — it is part of the entry-minus-stop distance. This is also why Mayne trades SFPs:
+        the sweep has already happened, so the obvious liquidity below is spent.</p>
+
+      <details>
+        <summary>Rules — the three stop behaviours</summary>
+        <ol>
+          <li><b>Hard order, placed immediately.</b> Not a mental stop. The moment the entry goes on,
+            the stop order goes on the platform with it. A mental stop is a negotiation you lose —
+            you hold "a little longer", you fall asleep, the loss doubles.</li>
+          <li><b>Never widen it against you.</b> Not once, not ever. Widening blows up the position-size
+            maths that the original stop generated: the $2,000 you agreed to lose quietly becomes
+            $3,000. Trailing a stop <i>up</i> with the trade is fine; moving it away never is.</li>
+          <li><b>Position size comes from the stop.</b> Leverage and margin are not in the equation at
+            all. Know the entry, know the stop, know the risk — the size falls out.</li>
+        </ol>
+      </details>
+
+      <h3>Position sizing</h3>
+      <div class="card">
+        <p style="margin-top:4px"><code>size = (risk % × account balance) ÷ (entry − stop)</code></p>
+        <table style="margin-bottom:4px">
+          <tr><th>Account</th><th>Risk</th><th>Entry</th><th>Stop</th><th>Size</th></tr>
+          <tr><td>$100,000</td><td>2% = $2,000</td><td>BTC 100,000</td><td>98,000</td><td>1 BTC</td></tr>
+          <tr><td>$10,000</td><td>2% = $200</td><td>HYPE $60</td><td>$50</td><td>20 HYPE</td></tr>
+        </table>
+        <p class="muted" style="margin-bottom:0">Risk <b>0.5–2%</b> per trade, and keep it static —
+          think in percent, not dollars, so 2% still feels like 2% when the account is a million. Five
+          open trades at 2% is 10% exposed, so count correlated positions. Your platform's order window
+          does the arithmetic; you just need to understand where the number comes from.</p>
+      </div>
+      <p class="muted"><b>Risk-first framing.</b> Before entry, state the worst case out loud: "stopped
+        out costs me $2,000." Being $1,000 in drawdown is then a non-event — you already accepted twice
+        that. Most people think reward first and never price the loss.</p>
+
+      <h3>Targets — internal to external</h3>
+      <p>Targets are not a judgement call; they are the other half of the liquidity cycle from §2.
+        <b>Enter at internal range liquidity → target external.</b> Enter off an external sweep →
+        target internal. Where you entered tells you where you're going.</p>
+
+      <div class="chart"><svg data-diagram="rk-targets"></svg></div>
+      <div class="cap">Long from an OB inside the range (IRL) → the target is the external range high.
+        Internal liquidity on the way — equal highs, a swing high — is where partials come off, not
+        where the trade ends.</div>
+
+      <details>
+        <summary>Rules — partials, and the two ways people ruin them</summary>
+        <ul>
+          <li><b>Default:</b> assume the whole thing closes at <b>2:1</b>. That is how Mayne reports his
+            trades unless he says otherwise.</li>
+          <li><b>If you take partials:</b> increments of <b>25%</b> or <b>1/3</b>. Peel 25–33% at obvious
+            internal liquidity on the way up; by the time price reaches 2R you are <b>50–75%</b> (or
+            2/3) out; the last 25–33% is the moon bag riding to the external target.</li>
+          <li><b>TP-ing too early</b> is a position-size symptom. If a green number makes you want to
+            close immediately, you're too big — the same tell as closing red trades before the stop.</li>
+          <li><b>Break-even too early</b> donates the position back. Your entry was an <i>entry</i>;
+            why would it be a good stop? Only move the stop once price has cleared a meaningful level
+            and you've taken something off — then trail to the new structure low.</li>
+          <li><b>Early on, don't do any of this.</b> Set entry, stop and target at the start and don't
+            touch them. Take the whole trade off at 2:1 or 3:1. Mechanical beats clever until you're
+            consistent.</li>
+        </ul>
+      </details>
+      <p class="muted">The receipt: a 100K account, a static 2% risk, trades closed primarily at 2R —
+        more than doubled in a little over a year.</p>
+
+      <h3>Reward:risk — the whole point</h3>
+      <div class="chart"><svg data-diagram="rk-rr"></svg></div>
+      <div class="cap">Reward:risk is entry→target divided by entry→stop. Map all three <b>before</b>
+        you click. Minimum accepted: <b>2:1</b>.</div>
+
+      <table>
+        <tr><th>R:R</th><th>Break-even win rate</th><th>Meaning</th></tr>
+        <tr><td>1 : 1</td><td>50%</td><td>You must be right more than half the time. Rare over a real sample.</td></tr>
+        <tr><td>2 : 1</td><td>33%</td><td>The minimum. Right one in three and you're flat; 40% and you're paid.</td></tr>
+        <tr><td>3 : 1</td><td>25%</td><td>Fewer setups qualify, but a 40% win rate here compounds fast.</td></tr>
+        <tr><td>5 : 1</td><td>17%</td><td>Some traders take nothing else. Far fewer trades, big payoffs.</td></tr>
+      </table>
+      <p class="muted">Mayne's own win rate: <b>48%</b> last year, 80% this year on a small low-volatility
+        sample, and <b>40–60%</b> as the long-run range. Profitability comes from the 2:1 floor, not from
+        being right. Below 2:1 the maths stops protecting you.</p>
+
+      <div class="chart"><svg data-diagram="rk-force"></svg></div>
+      <div class="cap">The most common self-deception: the honest target gives 1:1, so the target gets
+        dragged to a level nothing is resting at. <b>You don't move the target to manufacture RR</b> —
+        and you don't tighten the stop to do it either. The setup either offers 2:1 or it isn't a trade.</div>
+      <p class="muted">Stop comes from the chart. Target comes from the chart. If what the chart gives
+        you isn't 2:1, that trade was already being filtered out — see §12.</p>
+
+      <h3>What the indicator does and doesn't do here</h3>
+      <p>Three of §9's inputs are direct implementations of this episode:</p>
+      <table>
+        <tr><th>Input</th><th>Set it to</th><th>Which rule it encodes</th></tr>
+        <tr><td><i>Min RR to allow a signal</i></td><td>2</td><td>The 2:1 floor, enforced mechanically —
+          signals that don't clear it are suppressed, and the ones that fire carry the number in the
+          label ("BUY·OB 2.3R"). This is the closest thing in the script to Mayne's core filter.</td></tr>
+        <tr><td><i>Stop buffer beyond far edge (×ATR)</i></td><td>0.25 (default)</td><td>The breathing
+          room past the zone edge — the "don't sit on the exact low tick" rule, expressed in ATR so it
+          scales with volatility.</td></tr>
+        <tr><td><i>Target for RR</i></td><td>Range extreme</td><td>The IRL → ERL target logic. Switch to
+          "Nearest opposing zone" and you are measuring to <b>internal</b> liquidity — Mayne's partials
+          level, not his ultimate target, so the R number reads lower than the trade's real potential.</td></tr>
+      </table>
+      <p class="muted">Where it diverges, and it matters: the script's stop is <i>zone far edge ± ATR</i>,
+        a mechanical proxy. Mayne's stop is <b>structural</b> — beyond the swing low that produced the
+        MSB, or beyond the whole HTF POI — which is often further away and gives a different R than the
+        label shows. Treat the printed R as a screening number, then re-measure by hand from your actual
+        invalidation. And nothing in the indicator sizes a position, places a hard stop order, or takes
+        partials; that is <code>Mayne-SMC-Strategy.pine</code> and, mostly, you.</p>
+      </section>
+
+    <section id="scaling">
+      <h2>11 · Scaling in <span class="pill">building the position</span></h2>
+      <p class="lead">Everything so far has been all-in at one price: price hits the zone, you fill full
+      size. That works, but your points of interest are <b>zones, not lines</b>. Scaling means taking the
+      position size you already calculated and breaking it into pieces across that zone. There is a razor
+      thin line between scaling into a good trade and averaging down a bad one.</p>
+
+      <h3>What scaling is — and isn't</h3>
+      <div class="card">
+        <p style="margin-top:4px"><b>Scaling:</b> risk 1% (= 1R = $1,000 on a 100K account). The maths
+          from §10 says that's 1 BTC. You enter <code>0.3 + 0.3 + 0.4</code>, or <code>0.25 × 4</code>.
+          Total exposure: still 1 BTC, still 1%. You broke up the <i>entry</i>, not the risk.</p>
+        <p class="muted" style="margin-bottom:0"><b>Not scaling:</b> long 1 BTC, it moves, long another
+          1 BTC, it dips, long a third. That's a 3 BTC position and 3% of risk on a setup that priced
+          out at 1%. Nothing about the position size was recalculated — it was just tripled.</p>
+      </div>
+      <p>None of the numbers are unknown. Risk %, account size, entry, stop — the size is already
+        determined before the first fill. Scaling only decides how that fixed size arrives.</p>
+
+      <h3>Method 1 — ladder the zone</h3>
+      <div class="grid2">
+        <div>
+          <div class="chart"><svg data-diagram="sc-allin"></svg></div>
+          <div class="cap">All-in at the top edge. You get filled on any touch, but if price works
+            through the zone your entry is the worst price in it and the stop is the full zone away.</div>
+        </div>
+        <div>
+          <div class="chart"><svg data-diagram="sc-ladder"></svg></div>
+          <div class="cap">Same candles, three fills across the zone. Shallow pullback: you still have
+            exposure. Deep pullback: the average drops toward the far edge, so the same 1R now sits
+            <b>closer to invalidation</b> — better entry <i>and</i> better RR.</div>
+        </div>
+      </div>
+      <p class="muted">You have no idea how deep into a daily or H4 order block price will trade. It
+        might turn a third of the way in, or fill the gap and eat half the OB first. Laddering means you
+        get some exposure either way. Stop trying to bottom-tick — the money is in the distribution
+        after the reversal, not in the last dollar of the wick.</p>
+
+      <details>
+        <summary>Rules — laddering a zone</summary>
+        <ul>
+          <li><b>Thirds</b> is the default (fourths if you prefer). Mayne uses thirds.</li>
+          <li><b>At least one fill at the top of every PD array.</b> If an FVG sits on top of an OB:
+            one at the top of the FVG, one at the bottom of the FVG, one in the middle of the OB. Where
+            they overlap is the highest-probability pocket, so weight it.</li>
+          <li><b>The stop does not move.</b> You split the entry, not the stop — one stop, sitting where
+            the idea is invalidated, covering the whole 1 BTC. That's what keeps risk at 1%.</li>
+          <li><b>Don't put the entry on a single line.</b> Pinning the whole position to the mean
+            threshold to the tick means you either miss the fill entirely or watch price trade straight
+            through it.</li>
+        </ul>
+      </details>
+
+      <h3>Method 2 — add on confirmation</h3>
+      <div class="chart"><svg data-diagram="sc-confirm"></svg></div>
+      <div class="cap">First entry when the LTF model prints inside the HTF zone — the riskiest fill, so
+        it's the smallest. Each add requires <b>its own complete model</b>: a new MSB <i>and</i> a new
+        FVG. Full size is on only after the trade has proved itself.</div>
+      <p class="muted">Every new model is also a new invalidation, so the stop can come up to each new
+        model low. You end up at full size with a far tighter stop than you started with. Note the
+        trade-off against method 1: laddering a zone drives the average <b>down</b>, adding on
+        confirmation drives it <b>up</b> — you pay a worse average for proof.</p>
+      <p>An MSB with no fair value gap is not an add. Price breaking structure and running is not an
+        add. Wait for the break, the displacement, and the pullback into the gap — every single time.</p>
+
+      <h3>Laddering both together</h3>
+      <div class="chart"><svg data-diagram="sc-combo"></svg></div>
+      <div class="cap">0.5 BTC on the touch of the daily OB (so a reversal that never prints a LTF model
+        still gets you in), then 0.25 + 0.25 on M15 models as they confirm. Still 1 BTC, still 1R —
+        covered for a shallow bounce, a deep fill, and a straight-line reversal.</div>
+      <p class="muted">The failure case this protects against: the daily zone breaks, the LTF never turns,
+        no model ever prints — and you're down <b>0.5R</b> instead of a full 1R, because the confirming
+        half never got added. That's the whole argument for scaling in one sentence.</p>
+
+      <h3>Averaging down — the thing that looks identical and isn't</h3>
+      <div class="chart"><svg data-diagram="sc-avgdown"></svg></div>
+      <div class="cap">Price closes through the zone — that was invalidation — and the adds keep coming
+        because "it's cheaper now." A planned $1,000 loss becomes $1,500, then $2,000.</div>
+      <p>Two tells, and they are the only two:</p>
+      <ol>
+        <li><b>You're past invalidation.</b> The trade idea is already dead; anything you add is risk you
+          never budgeted. If the hard stop order from §10 were actually on the platform, you would have
+          been taken out and this could not happen.</li>
+        <li><b>There's no model.</b> You zoom in and the LTF is making lower lows and lower highs — no
+          MSB, no FVG, no sign of life — and you buy anyway. The zone is telling you it won't hold.</li>
+      </ol>
+      <div class="card">
+        <p style="margin:4px 0 0"><b>The difference is planning.</b> Scaling is decided before the first
+          fill: this much here, this much there, this much on confirmation, one stop, total risk 1R.
+          Averaging down is improvised — negotiating with the invalidation, hoping the level was
+          slightly wrong. <b>If it feels like you're making it up as you go, you're averaging down a
+          loser.</b></p>
+      </div>
+      <p class="muted">And the honest caveat: one entry, one stop, don't touch it is still the right
+        answer until the basic model is second nature. Scaling and trailing stops are what you graduate
+        to, not what you start with.</p>
+
+      <h3>What the indicator does and doesn't do here</h3>
+      <p>Very little of this is mechanised, and the guide should be honest about it. A zone fires
+        <b>once</b>, as a single BUY/SELL label — the script has no concept of a partial fill, an
+        average entry, or an add-on. The manual hook is the zone table: the <b>Entry (range)</b> column
+        is the full bottom–top of the zone precisely so you can ladder your orders across it, with the
+        <b>50%</b> column as the middle rung. <i>Trigger at zone 50%</i> off = the signal fires at first
+        touch of the edge, which is the top rung of a ladder rather than the whole position.</p>
+      <p class="muted">The RR the label prints assumes a single fill. Ladder the zone and your real
+        average sits below it, so your actual R is <b>better</b> than the number shown — the readout is
+        conservative, not wrong. <i>Stop buffer beyond far edge (×ATR)</i> still describes the one stop
+        that covers all your rungs, which is the correct model. Nothing in the script detects averaging
+        down; only your own hard stop does.</p>
+      </section>
+
+    <section id="notrade">
+      <h2>12 · When not to trade <span class="pill">the filter</span></h2>
+      <p class="lead">Every other section is about what to look for. This one is the inverse, and it may
+      be the most important: <b>your edge is a filter</b>, and what separates a profitable trader from an
+      average one is the ability to throw trades away. Risk and attention are both finite — most of what
+      you see on a chart or a timeline deserves neither.</p>
+
+      <p>Seven disqualifiers. If <b>any one</b> of them is true, there is no trade. They are deliberately
+        binary — you should be able to answer each in a second, without argument.</p>
+
+      <table>
+        <tr><th>#</th><th>Disqualifier</th><th>The question you ask</th></tr>
+        <tr><td>1</td><td>No HTF bias</td><td>Can I say bullish or bearish immediately? A "maybe" is a no.</td></tr>
+        <tr><td>2</td><td>Wrong zone</td><td>Long but not in discount? Short but not in premium? Out.</td></tr>
+        <tr><td>3</td><td>No liquidity target, or the maths fails</td><td>Where is it going, and does it pay 2:1?</td></tr>
+        <tr><td>4</td><td>Model didn't <i>fully</i> trigger</td><td>Did every step happen, in order?</td></tr>
+        <tr><td>5</td><td>You're chasing</td><td>Did I get my fill where I said I would, or am I paying up?</td></tr>
+        <tr><td>6</td><td>News</td><td>CPI / FOMC / NFP / earnings today? Sit out.</td></tr>
+        <tr><td>7</td><td>You're emotional</td><td>Angry, tired, on tilt, FOMO, revenge? Close the laptop.</td></tr>
+      </table>
+
+      <h3>1 · No high timeframe bias</h3>
+      <div class="chart"><svg data-diagram="nt-nobias"></svg></div>
+      <div class="cap">If you can't tell within seconds whether the weekly / daily is up or down, the
+        deck isn't stacked. A ranging HTF means longs can work and shorts can work — that's a coin flip,
+        not an edge.</div>
+      <p class="muted">Rated by Mayne as the most important and the easiest of the seven. It is also the
+        §4 master filter restated as a veto instead of a green light.</p>
+
+      <h3>2 · Price is in the wrong zone</h3>
+      <div class="chart"><svg data-diagram="nt-wrongzone"></svg></div>
+      <div class="cap">Bias is bullish, price is in <b>premium</b>. A long here isn't impossible, it's
+        just less probable — and low-probability is exactly what the system exists to reject.</div>
+      <p class="muted">The alternative isn't "take it anyway", it's <b>wait</b>: sit out, or let price
+        come to your side of the 50%. That's patience, not inaction.</p>
+
+      <h3>3 · No clear liquidity target, or the maths doesn't work</h3>
+      <div class="chart"><svg data-diagram="nt-math"></svg></div>
+      <div class="cap">Stop 10 points away, the only real liquidity 10 points above: a 1:1. The maths
+        does not work, so there is no trade — regardless of how good the entry looks. Where the trade is
+        <i>going</i> matters as much as where the stop is.</div>
+      <p class="muted">Two separate failures live in this one item. <b>(a)</b> Price is mid-range, the
+        highs and lows are already taken, nothing obvious is being targeted — no trade. <b>(b)</b> There
+        <i>is</i> a target but it pays less than 2:1 — no trade. And per §10, you fix neither by dragging
+        the target further out.</p>
+
+      <h3>4 · The model didn't fully trigger</h3>
+      <div class="chart"><svg data-diagram="nt-model"></svg></div>
+      <div class="cap">Price reached the HTF zone and structure broke — but no displacement, no fair
+        value gap, so there is nothing to retrace into. Entering here is skipping a step.</div>
+      <p class="muted">The keyword is <b>fully</b>. Zone → HTF clue (is H1/H4 bullish now?) → MSB →
+        displacement leaving an FVG → retrace into the FVG for the entry. In that order, every time.
+        Front-running any one of them — "there hasn't been a break yet but I'm confident there will be" —
+        is a disqualifier, not a judgement call.</p>
+
+      <h3>5 · You're chasing</h3>
+      <div class="chart"><svg data-diagram="nt-chase"></svg></div>
+      <div class="cap">The displacement leaves your gap and never comes back to fill you. That's a
+        missed trade, not a trade. We do business where we decided to do business.</div>
+      <p class="muted">Both flavours count: getting to the screen after the move and buying anyway, and
+        price coming "close enough" to the zone without tagging it while you front-run your own level.
+        The predictable ending — you buy the extension, it retraces, you close red, and <i>then</i> it
+        goes.</p>
+
+      <h3>6 · News</h3>
+      <div class="chart"><svg data-diagram="nt-news"></svg></div>
+      <div class="cap">Around CPI, FOMC, NFP or earnings you routinely get <b>both sides of the range
+        run</b> before the real move. The event is the cover story for taking liquidity from everyone
+        gambling on the headline.</div>
+      <p class="muted">The NVIDIA example: beat earnings, pumped, everyone bought — then the market sold
+        off, ran the stops, trapped the longs, and only then made the actual up-move. Trading before,
+        during, or right after the print is gambling. Sit out, let the dust settle, let price show you
+        how it absorbed the news, then look for a setup.</p>
+
+      <h3>7 · You're emotional</h3>
+      <p>No diagram — this one isn't on the chart. Anger, fear, greed, FOMO, tilt, revenge after two
+        losses, a bad night's sleep, a fight before you sat down. Rated as big a filter as #1. Emotion
+        is what makes you skip the other six items, and you'll only notice afterwards, the same way you
+        notice something you said in an argument once you've cooled off.</p>
+
+      <div class="card">
+        <h4 style="margin-top:4px">The meta-rule</h4>
+        <p style="margin-bottom:0">All seven are meant to be <b>clear, obvious and immediate</b> — the
+          same standard as spotting a fair value gap or a sweep. If a disqualifier needs a long argument
+          with yourself to dismiss, that's the tell: it applies. <b>When in doubt, don't.</b> And review
+          the trades you filtered out, not just the ones you took — that's where the edge actually shows
+          up.</p>
+      </div>
+
+      <h3>What the indicator does and doesn't do here</h3>
+      <p>Four of the seven have a mechanical counterpart in §9. Three do not, and never will.</p>
+      <table>
+        <tr><th>Disqualifier</th><th>Indicator equivalent</th><th>How complete</th></tr>
+        <tr><td>1 · No HTF bias</td><td><i>HTF bias timeframe</i></td><td><b>Partial.</b> It suppresses
+          signals that disagree with one higher chart — but it always has <i>a</i> bias, so it can never
+          tell you the HTF is unreadable. Detecting "no clear bias" is still your call.</td></tr>
+        <tr><td>2 · Wrong zone</td><td><i>Require correct half</i> (on by default)</td><td><b>Direct.</b>
+          Longs only in discount, shorts only in premium, enforced.</td></tr>
+        <tr><td>3 · Maths doesn't work</td><td><i>Min RR to allow a signal</i> → 2</td><td><b>Direct on
+          RR</b>, using a mechanical stop and target (§10). It cannot judge whether the target is a real
+          liquidity pool or just the range extreme.</td></tr>
+        <tr><td>4 · Model not fully triggered</td><td>Displacement ≥ ATR ×, <i>Require liquidity sweep
+          first</i>, bar-close confirmation</td><td><b>Partial.</b> It checks displacement, an optional
+          sweep, and a genuine retest — not the full top-down sequence.</td></tr>
+        <tr><td>5 · Chasing</td><td><i>Trigger at zone 50%</i></td><td><b>Structurally solved.</b> The
+          signal only exists at the zone. A gap that never gets retraced never prints a label, so there
+          is nothing to chase — the indicator simply stays silent, which is the correct answer.</td></tr>
+        <tr><td>6 · News</td><td>none</td><td>No economic calendar, no kill-zone or session logic. It
+          will happily fire into CPI.</td></tr>
+        <tr><td>7 · Emotions</td><td>none</td><td>Not a solvable problem in Pine.</td></tr>
+      </table>
+      <p class="muted">Turning on every gate at once gets you close to a mechanical version of items
+        1–5, and that is genuinely most of the list. But a printed signal means "a POI is being retested
+        in the right context" — it is not the seventh box ticked. Items 6 and 7 are the ones that empty
+        accounts, and both are entirely on you.</p>
+      </section>
+
     <section id="reference">
-      <h2>8 · Quick reference</h2>
+      <h2>13 · Quick reference</h2>
 
       <h3>Acronyms</h3>
       <table>
@@ -565,6 +1389,9 @@
         <tr><td>Bullish breaker</td><td>edge → 50%, at reversal</td><td>beyond breaker / beyond sweep low</td><td>external BSL</td></tr>
         <tr><td>Bearish breaker</td><td>edge → 50%, at reversal</td><td>beyond breaker / beyond sweep high</td><td>external SSL</td></tr>
       </table>
+      <p class="muted">The stop column is <i>geometry</i> — the minimum. The real rule (§10) is
+        <b>structural invalidation</b>: beyond the swing that produced the MSB, or beyond the whole
+        HTF POI. That is often further out than the zone edge, so size down rather than tightening in.</p>
 
       <h3>The non-negotiables</h3>
       <div class="card">
@@ -581,7 +1408,7 @@
     </section>
 
     <section id="indicator">
-      <h2>9 · Reading the indicator</h2>
+      <h2>14 · Reading the indicator</h2>
       <p class="lead">The Pine script in this folder (<code>Mayne-SMC-Indicator.pine</code>)
       mechanically marks the chartable parts of everything above: order blocks, FVGs, bias, the 50%,
       and BUY/SELL signals. This section ties the theory to what actually prints on your chart.</p>
@@ -616,21 +1443,24 @@
       <p>Reads off the nearest <b>buy zones below price</b> and <b>sell zones above price</b>, so you
         can see where price is likely to react without eyeballing the boxes.</p>
       <div class="zt">
-        <div><span class="hd">BIAS</span><span class="hd">Bullish</span><span class="hd">PRICE</span><span class="hd">42,180</span></div>
-        <div><span class="hd">RANGE</span><span class="hd">Discount</span><span class="hd">EQ</span><span class="hd">41,900</span></div>
-        <div><span class="hsell">SELL ZONES (above)</span><span class="hsell"></span><span class="hsell"></span><span class="hsell"></span></div>
-        <div><span class="col">Type</span><span class="col">Entry (range)</span><span class="col">50%</span><span class="col">Dist</span></div>
-        <div><span>OB</span><span>42,900 – 43,200</span><span>43,050</span><span>1.71%</span></div>
-        <div><span>FVG</span><span>43,400 – 43,560</span><span>43,480</span><span>2.89%</span></div>
-        <div><span class="hbuy">BUY ZONES (below)</span><span class="hbuy"></span><span class="hbuy"></span><span class="hbuy"></span></div>
-        <div><span class="col">Type</span><span class="col">Entry (range)</span><span class="col">50%</span><span class="col">Dist</span></div>
-        <div><span>FVG</span><span>41,650 – 41,790</span><span>41,720</span><span>0.92%</span></div>
-        <div><span>OB</span><span>41,050 – 41,350</span><span>41,200</span><span>1.97%</span></div>
+        <div><span class="hd">BIAS</span><span class="hd">Bullish</span><span class="hd">PRICE</span><span class="hd">42,180</span><span class="hd"></span></div>
+        <div><span class="hd">RANGE</span><span class="hd">Discount</span><span class="hd">EQ</span><span class="hd">41,900</span><span class="hd"></span></div>
+        <div class="sec"><span class="hsell">SELL ZONES (above)</span></div>
+        <div><span class="col">Type</span><span class="col">Entry (range)</span><span class="col">50%</span><span class="col">Dist</span><span class="col">RR</span></div>
+        <div><span>OB</span><span>42,900 – 43,200</span><span>43,050</span><span>1.71%</span><span>2.4</span></div>
+        <div><span>FVG</span><span>43,400 – 43,560</span><span>43,480</span><span>2.89%</span><span>1.8</span></div>
+        <div class="sec"><span class="hbuy">BUY ZONES (below)</span></div>
+        <div><span class="col">Type</span><span class="col">Entry (range)</span><span class="col">50%</span><span class="col">Dist</span><span class="col">RR</span></div>
+        <div><span>FVG</span><span>41,650 – 41,790</span><span>41,720</span><span>0.92%</span><span>3.1</span></div>
+        <div><span>OB</span><span>41,050 – 41,350</span><span>41,200</span><span>1.97%</span><span>2.2</span></div>
       </div>
       <ul>
         <li><b>Entry (range)</b> — the full zone, bottom – top. Ladder your order across it.</li>
         <li><b>50%</b> — the mean threshold, the optimal fill and the level the on-chart signal fires at.</li>
         <li><b>Dist</b> — how far the near edge is from price (how far price must travel to first touch).</li>
+        <li><b>RR</b> — indicative reward:risk if that zone triggers, on the same stop/target rules as
+          the labels (§10). Targets move as the range and the surrounding zones evolve, so rank with
+          it; don't treat it as the trade's final R. A laddered fill (§11) beats the printed number.</li>
       </ul>
       <p class="muted">The table lists <i>live candidate</i> zones only — a zone drops off once it has
         fired or been mitigated (price reached its 50%), so the map never shows spent levels. A zone
@@ -657,16 +1487,27 @@
         <tr><td>Swing length</td><td>2</td><td>Catch only bigger, cleaner structure. Use 3–4 on HTF.</td></tr>
         <tr><td>Marker distance (×ATR)</td><td>0.1</td><td>Push BUY/SELL/MSB markers further from the candle.</td></tr>
         <tr><td>Displacement ≥ ATR ×</td><td>1.5</td><td>Demand stronger displacement before trusting an FVG/OB.</td></tr>
+        <tr><td>Require displacement on middle candle</td><td>on</td><td>Filter weak gaps; off = mark every 3-candle gap.</td></tr>
+        <tr><td>Only OBs whose move breaks structure</td><td>on</td><td>Keep just the order blocks whose displacement broke structure — the highest-probability kind (§5).</td></tr>
         <tr><td>Require correct half</td><td>on</td><td>Enforce buy-low / sell-high.</td></tr>
         <tr><td>Trigger at zone 50%</td><td>on</td><td>Signal at the midpoint; off = first touch of the edge.</td></tr>
         <tr><td>HTF bias timeframe</td><td>blank (off)</td><td>Only allow signals agreeing with this higher TF's trend — the §4 master filter. Must be higher than the chart TF.</td></tr>
         <tr><td>Confirm signals on bar close</td><td>on</td><td>No intra-bar flicker; off = fire on first touch.</td></tr>
         <tr><td>Require liquidity sweep first</td><td>off</td><td>Only signal after a recent run + rejection of the range low/high — the §2 sweep rule. Strict, so opt-in.</td></tr>
+        <tr><td>Sweep lookback (bars)</td><td>20</td><td>How recent that sweep has to be.</td></tr>
         <tr><td>Stop buffer beyond far edge (×ATR)</td><td>0.25</td><td>Give the stop more room past the zone's far edge (feeds the RR readout and the strategy's brackets).</td></tr>
         <tr><td>Target for RR</td><td>Range extreme</td><td>Switch to "Nearest opposing zone" for first-obstacle targets instead of the full range.</td></tr>
         <tr><td>Min RR to allow a signal</td><td>0 (off)</td><td>Suppress signals that don't offer at least this reward:risk at the trigger.</td></tr>
         <tr><td>Max zone age (bars)</td><td>500</td><td>Expire untouched zones (frozen box, no table, no signals). Lower to declutter LTF charts; 0 = never.</td></tr>
       </table>
+      <p class="muted"><b>If the chart is too busy</b>, raise <i>Swing length</i> and
+        <i>Displacement ≥ ATR ×</i> first. Turning off <i>Show FVGs</i> or <i>Show Order Blocks</i>
+        also works, but be aware that it does more than hide them — that POI type leaves the system
+        entirely, so it stops signalling and stops appearing in the table.</p>
+      <p class="muted"><b>Alerts:</b> six conditions ship — <i>Mayne SMC BUY</i> / <i>SELL</i>, plus
+        <i>MSB Up/Down</i> and <i>MSS Up/Down</i>. Each message carries the ticker and timeframe (and
+        the close on BUY/SELL), so alerts fired from several charts stay tellable apart. Right-click a
+        signal → Add alert. With bar-close confirmation on, they fire on the close.</p>
       <p>To put numbers on these rules, the repo also ships <code>Mayne-SMC-Strategy.pine</code> —
         the same engine as a TradingView strategy (risk-sized entries, stop/target brackets,
         per-POI-type trade IDs) for the Strategy Tester. See the README's Backtesting section.</p>
@@ -731,13 +1572,19 @@
   function draw(svg, spec){
     while(svg.firstChild) svg.removeChild(svg.firstChild);
     var n=spec.candles.length;
-    var VW=W_MARGIN.l+n*SPACING+W_MARGIN.r;
+    // right margin grows to fit the longest right-edge level label (11px font, ~5.9px/char);
+    // diagrams with short labels keep the default and render exactly as before
+    var rLbl=0;
+    (spec.ann||[]).forEach(function(a){ if(a.t==="level"&&a.label) rLbl=Math.max(rLbl,a.label.length); });
+    var MR=Math.max(W_MARGIN.r, Math.ceil(rLbl*5.9)+16);
+    var VW=W_MARGIN.l+n*SPACING+MR;
     svg.setAttribute("viewBox","0 0 "+VW+" "+VH);
     var b=bounds(spec), mn=b[0], mx=b[1];
     var plotT=W_MARGIN.t, plotB=VH-W_MARGIN.b;
     var xc=function(i){return W_MARGIN.l+i*SPACING+SPACING/2;};
     var y =function(p){return plotT+(mx-p)/(mx-mn)*(plotB-plotT);};
-    var xL=W_MARGIN.l, xR=VW-W_MARGIN.r;
+    var xL=W_MARGIN.l, xR=VW-MR;
+    var hasLvl=(spec.ann||[]).some(function(a){return a.t==="level"&&a.label;});
     var labelX=xR+6;
 
     // annotations behind candles: zones + halves + levels
@@ -777,6 +1624,11 @@
     (spec.ann||[]).forEach(function(a){
       if(a.t==="tag"){
         var x=xc(a.i), yy=a.pos==="below"?y(a.price)+15:y(a.price)-7;
+        // keep the (centred) text inside the plot, and clear of the right-hand level-label
+        // gutter when this diagram has one — otherwise long tags overlap those labels
+        var tw=(a.text||"").length*5.6, lo=2+tw/2, hi=(hasLvl?xR-3:VW-2)-tw/2;
+        if(x>hi) x=Math.max(lo,hi);
+        if(x<lo) x=Math.min(hi,lo);
         var tx=el("text",{x:x,y:yy,"class":"svg-txt c tag "+(a.cls||"")},svg);
         tx.textContent=a.text;
         if(a.tip) tx.setAttribute("data-tip",a.tip);
@@ -799,7 +1651,7 @@
            {t:"tag",i:1,price:60,text:"highest",cls:"tag-hh"}]},
     "swing-low":{candles:[[80,85,60,65,"down"],[65,70,40,60],[65,85,63,80]],
       ann:[{t:"level",price:40,label:"Swing Low",cls:"lvl"},
-           {t:"tag",i:1,price:40,text:"lowest",cls:"tag-hl",pos:"below"}]},
+           {t:"tag",i:1,price:39.7,text:"lowest",cls:"tag-hl",pos:"below"}]},
     "uptrend":{candles:[[10,30,8,28],[28,44,26,42],[42,43,24,26,"down"],[26,30,22,27],
         [27,64,25,60],[60,62,44,46,"down"],[46,49,43,47],[47,84,45,80]],
       ann:[{t:"tag",i:1,price:44,text:"HH",cls:"tag-hh"},{t:"tag",i:3,price:22,text:"HL",cls:"tag-hl",pos:"below"},
@@ -839,7 +1691,7 @@
       ann:[{t:"level",price:72,label:"ERL (target)",cls:"lvl"},{t:"level",price:18,label:"ERL (target)",cls:"lvl"},
            {t:"zone",top:54,bot:46,cls:"z-ob-bull",label:"IRL (entry)",i0:3,i1:5,tip:"Internal liquidity — OB/FVG inside the range. Where you enter."}]},
     "eqh":{candles:[[30,58,28,40,"down"],[40,60,38,44],[44,59,30,32,"down"],[32,60,30,42],[42,46,22,24,"down"]],
-      ann:[{t:"level",price:62,label:"liquidity",cls:"lvl"},{t:"tag",i:1,price:60,text:"= = equal highs",cls:"tag-hh"}]},
+      ann:[{t:"level",price:62,label:"liquidity",cls:"lvl"},{t:"tag",i:1,price:61.7,text:"= = equal highs",cls:"tag-hh"}]},
     "range-build":{candles:[[22,30,18,28],[28,44,26,42],[42,46,30,40],[40,58,38,54],[54,62,40,42,"down"],
         [42,56,40,52],[52,70,50,66],[66,72,54,56,"down"]],
       ann:[{t:"half",top:74,bot:45,cls:"z-prem",label:"PREMIUM — look for shorts"},
@@ -867,11 +1719,280 @@
     "unicorn":{candles:[[40,44,30,34,"down"],[34,38,22,24,"down"],[24,28,18,26],[26,64,25,62],[62,80,60,76]],
       ann:[{t:"zone",top:28,bot:18,cls:"z-ob-bull",label:"OB",i0:2,i1:2},
            {t:"zone",top:34,bot:28,cls:"z-fvg-bull",label:"FVG",i0:2,i1:3,tip:"OB + FVG stacked = the 'unicorn', the highest-probability POI."}]},
-    "po3":{candles:[[40,46,36,42],[42,45,37,40,"down"],[40,46,38,43],[43,45,30,32,"down"],[32,34,22,26],
-        [26,44,24,42],[42,60,40,58],[58,78,56,74]],
-      ann:[{t:"bracket",i0:0,i1:3,price:48,label:"Accumulation"},
-           {t:"tag",i:3,price:30,text:"Manipulation",cls:"tag-sell",pos:"below",tip:"Fake move down to grab SSL — the stop hunt."},
-           {t:"bracket",i0:5,i1:7,price:80,label:"Distribution"}]}
+    // ---- §6 Power of three -------------------------------------------------
+    "p3-amd-bull":{candles:[[44,50,40,46],[46,49,41,42,"down"],[42,50,40,47],[47,48,41,42,"down"],
+        [42,43,30,32,"down"],[32,52,31,50],[50,66,49,64],[64,80,62,78]],
+      ann:[{t:"zone",top:50,bot:40,cls:"z-gen",label:"Accumulation",i0:0,i1:3,tip:"Sideways. Buy stops pile above, sell stops below."},
+           {t:"tag",i:4,price:30,text:"Manipulation (Judas)",cls:"tag-sell",pos:"below",tip:"Breaks the range low and runs the sell stops — where the institution fills longs."},
+           {t:"tag",i:5,price:52,text:"displacement ↑",cls:"tag-buy",tip:"Strong close back inside the range confirms the breakdown was fake."},
+           {t:"bracket",i0:6,i1:7,price:82,label:"Distribution"}]},
+    "p3-amd-bear":{candles:[[56,60,50,54,"down"],[54,59,51,58],[58,60,50,52,"down"],[52,59,51,57],
+        [57,70,56,68],[68,69,48,50,"down"],[50,52,34,36,"down"],[36,38,20,22,"down"]],
+      ann:[{t:"zone",top:60,bot:50,cls:"z-gen",label:"Accumulation",i0:0,i1:3},
+           {t:"tag",i:4,price:70,text:"Manipulation (Judas)",cls:"tag-sell",tip:"Runs above the range into buy-side liquidity — the institution sells into it."},
+           {t:"tag",i:5,price:48,text:"displacement ↓",cls:"tag-sell",pos:"below"},
+           {t:"bracket",i0:6,i1:7,price:14,label:"Distribution"}]},
+    "p3-olhc":{candles:[[28,32,26,30],[30,33,16,32],[32,50,31,48],[48,66,47,64],
+        [64,78,44,46,"down"],[46,48,30,32,"down"]],
+      ann:[{t:"tag",i:1,price:16,text:"open → low → high → close",cls:"tag-buy",pos:"below",tip:"Bullish candle: the lower wick is the manipulation, the body is the distribution."},
+           {t:"tag",i:4,price:78,text:"open → high → low → close",cls:"tag-sell",tip:"Bearish candle: the upper wick is the manipulation, the body is the distribution."}]},
+    "p3-weekly":{candles:[[40,46,38,44],[44,47,30,33,"down"],[33,50,32,48],[48,62,47,60],[60,76,58,74]],
+      ann:[{t:"level",price:40,label:"weekly open",cls:"lvl-eq"},
+           {t:"tag",i:0,price:46,text:"Mon · A",cls:"tag-hh"},
+           {t:"tag",i:1,price:30,text:"Tue · M — low of the week",cls:"tag-buy",pos:"below",tip:"Below the weekly open early, reclaimed by Tue/Wed — the low of the week is probably in."},
+           {t:"bracket",i0:3,i1:4,price:78,label:"Thu–Fri · D"}]},
+    "p3-daily":{candles:[[50,53,47,49,"down"],[49,52,47,51],[51,53,46,48,"down"],[48,49,36,38,"down"],
+        [38,54,37,52],[52,66,51,64],[64,78,62,76]],
+      ann:[{t:"level",price:50,label:"daily open",cls:"lvl-eq"},
+           {t:"zone",top:53,bot:46,cls:"z-gen",label:"Asian range (A)",i0:0,i1:2,tip:"Overnight EST — low volume, orders accumulating both sides."},
+           {t:"tag",i:3,price:36,text:"NY open · M",cls:"tag-buy",pos:"below",tip:"9:30 EST dive below the daily open runs sell stops — the Judas swing."},
+           {t:"tag",i:4,price:64.3,text:"reclaim + displacement",cls:"tag-buy"},
+           {t:"bracket",i0:5,i1:6,price:80,label:"D — rest of session"}]},
+    "p3-visual":{candles:[[38,44,34,40],[40,45,35,37,"down"],[37,44,34,42],[42,45,35,36,"down"],
+        [36,38,24,26,"down"],[26,46,25,44],[44,58,42,56],[56,74,54,72]],
+      ann:[{t:"zone",top:45,bot:34,cls:"z-gen",label:"Accumulation (weeks–months)",i0:0,i1:3},
+           {t:"tag",i:4,price:24,text:"Manipulation",cls:"tag-sell",pos:"below",tip:"One clean break below the macro range — everyone calls for lower prices."},
+           {t:"tag",i:5,price:48,text:"displacement ↑",cls:"tag-buy"},
+           {t:"zone",top:42,bot:38,cls:"z-fvg-bull",label:"FVG",i0:4,i1:7,tip:"The aggressive reclaim leaves a gap — the pullback entry on the distribution leg."},
+           {t:"bracket",i0:6,i1:7,price:78,label:"Distribution"}]},
+    "p3-sweep-ob":{candles:[[50,54,46,48,"down"],[48,53,45,52],[52,54,45,46,"down"],[46,47,30,33,"down"],
+        [33,52,32,50],[50,64,48,62],[62,78,60,76]],
+      ann:[{t:"zone",top:54,bot:45,cls:"z-gen",label:"Accumulation",i0:0,i1:2},
+           {t:"zone",top:36,bot:28,cls:"z-ob-bull",label:"HTF bullish OB (discount)",tip:"The manipulation leg lands inside the HTF point of interest — sweep and order block on the same level."},
+           {t:"tag",i:3,price:30,text:"M into the OB",cls:"tag-buy",pos:"below"},
+           {t:"tag",i:4,price:63.1,text:"displacement = confirmation",cls:"tag-buy"},
+           {t:"bracket",i0:5,i1:6,price:80,label:"Distribution → BSL"}]},
+
+    // ---- §2 addendum: equal highs / equal lows ------------------------------
+    "eq-touches":{candles:[[30,52,28,50],[50,53,40,42,"down"],[42,53,40,44],[44,52,38,40,"down"],
+        [40,54,38,52],[52,53,40,42,"down"],[42,68,41,64]],
+      ann:[{t:"level",price:53,label:"EQH",cls:"lvl-eq"},
+           {t:"level",price:58,label:"stops / BSL",cls:"lvl"},
+           {t:"tag",i:4,price:38,text:"3rd touch = a bigger pool, not stronger support",cls:"tag-hh",pos:"below",tip:"Each rejection recruits more shorts and more stops just above the level."},
+           {t:"tag",i:6,price:68,text:"taken",cls:"tag-buy"}]},
+    "eq-engineered":{candles:[[56,58,44,46,"down"],[46,48,32,34,"down"],[34,44,33,42],[42,44,32,34,"down"],
+        [34,42,33,40],[40,41,22,24,"down"],[24,46,23,44]],
+      ann:[{t:"level",price:32,label:"EQL",cls:"lvl-eq"},
+           {t:"zone",top:27,bot:20,cls:"z-ob-bull",label:"OB / OTE — the real level",tip:"Equal lows engineered just above the POI so you buy early and get run into it."},
+           {t:"tag",i:4,price:44,text:"looks like it's front-running the OB",cls:"tag-hh"},
+           {t:"tag",i:5,price:22,text:"sweep → into the OB",cls:"tag-buy",pos:"below"},
+           {t:"tag",i:6,price:48,text:"then the move",cls:"tag-buy"}]},
+    "eq-cycle":{candles:[[56,60,50,52,"down"],[52,54,36,38,"down"],[38,59,37,56],[56,58,35,36,"down"],
+        [36,40,34,37],[37,38,26,36],[36,48,35,46],[46,62,42,60]],
+      ann:[{t:"level",price:60,label:"EQH → target",cls:"lvl-eq"},
+           {t:"level",price:34,label:"EQL",cls:"lvl-eq"},
+           {t:"tag",i:5,price:26,text:"sweep",cls:"tag-buy",pos:"below",tip:"Wick through the equal lows, close back inside — sell-side taken."},
+           {t:"zone",top:42,bot:38,cls:"z-fvg-bull",label:"FVG = entry",i0:5,i1:7,tip:"The displacement off the sweep leaves the gap you enter on."},
+           {t:"tag",i:7,price:62,text:"EQH taken",cls:"tag-buy"}]},
+    // --- §7 workflow: the four-step top-down process (Ep12) ---------------
+    "td-daily-pullback":{candles:[[64,66,58,60,"down"],[60,62,52,54,"down"],[54,60,52,58],
+        [58,60,46,48,"down"],[48,50,40,42,"down"],[42,44,34,36,"down"]],
+      ann:[{t:"zone",top:38,bot:28,cls:"z-ob-bull",label:"weekly demand",tip:"HTF demand marked in step 1. Price is only just reaching it."},
+           {t:"tag",i:2,price:60,text:"LH",cls:"tag-hh"},
+           {t:"tag",i:5,price:34,text:"still LL — wait",cls:"tag-hl",pos:"below",tip:"Daily still bearish inside a bullish weekly: the pullback is not finished."}]},
+    "td-daily-sync":{candles:[[60,62,52,54,"down"],[54,56,46,48,"down"],[48,50,40,42,"down"],
+        [42,44,36,38,"down"],[38,44,37,42],[42,58,41,56]],
+      ann:[{t:"zone",top:44,bot:34,cls:"z-ob-bull",label:"weekly demand"},
+           {t:"level",price:50,label:"last LH",cls:"lvl"},
+           {t:"tag",i:5,price:58,text:"MSS ↑ — synced",cls:"tag-mss",tip:"Daily flips inside the weekly zone: the pullback is complete. Step 2 starts here."}]},
+    "td-h4-context":{candles:[[26,28,20,22,"down"],[22,44,21,42],[42,64,40,60],[60,66,56,58,"down"],
+        [58,66,54,56,"down"],[56,58,44,46,"down"],[46,50,36,38,"down"]],
+      ann:[{t:"half",top:66,bot:43,cls:"z-prem",label:"PREMIUM"},
+           {t:"half",top:43,bot:20,cls:"z-disc",label:"DISCOUNT"},
+           {t:"level",price:66,label:"EQH (target)",cls:"lvl"},
+           {t:"level",price:43,label:"EQ 50%",cls:"lvl-eq"},
+           {t:"zone",top:28,bot:20,cls:"z-ob-bull",label:"H4 OB (discount)",i0:0,i1:6,tip:"Step 2 marks the map: range, equilibrium, equal highs, the POI. No entries here."}]},
+    "td-h1-wait":{candles:[[52,54,46,48,"down"],[48,50,42,44,"down"],[44,50,42,48],[48,50,40,42,"down"],
+        [42,44,34,36,"down"],[36,38,28,32,"down"],[32,40,30,38]],
+      ann:[{t:"zone",top:34,bot:28,cls:"z-ob-bull",label:"H4 zone"},
+           {t:"bracket",i0:0,i1:4,price:58,label:"waiting — hours to days"},
+           {t:"tag",i:5,price:28,text:"tag → step 4",cls:"tag-buy",pos:"below",tip:"Only once price trades into the zone do you open the execution chart."}]},
+
+    // --- §9 entry models (Ep13 / Ep14) ------------------------------------
+    "em-m5-model":{candles:[[62,64,56,58,"down"],[58,60,50,52,"down"],[52,54,44,46,"down"],
+        [46,48,38,40,"down"],[40,44,38,42],[42,68,41,66],[66,70,52,54,"down"],[54,56,45,50,"down"]],
+      ann:[{t:"zone",top:44,bot:34,cls:"z-ob-bull",label:"H4 zone (step 1: tagged)",tip:"Price must trade into the HTF zone. No tag, no setup."},
+           {t:"level",price:54,label:"last LH",cls:"lvl"},
+           {t:"zone",top:52,bot:44,cls:"z-fvg-bull",label:"FVG = entry",i0:4,i1:7,tip:"The displacement candle's gap — high of the candle before it to the low of the candle after."},
+           {t:"tag",i:5,price:68,text:"MSB + displacement",cls:"tag-buy"},
+           {t:"tag",i:7,price:45,text:"entry",cls:"tag-buy",pos:"below"},
+           {t:"level",price:36,label:"stop (M5 low)",cls:"lvl"}]},
+    "em-no-tag":{candles:[[62,64,56,58,"down"],[58,60,52,54,"down"],[54,56,48,50,"down"],
+        [50,52,46,48,"down"],[48,58,47,56],[56,66,55,64]],
+      ann:[{t:"zone",top:42,bot:34,cls:"z-ob-bull",label:"HTF zone — never tagged"},
+           {t:"tag",i:3,price:46,text:"no tag → no trade",cls:"tag-sell",pos:"below",tip:"Price stalls above the zone and reverses. Step 1 never completed."}]},
+    "em-no-displacement":{candles:[[56,58,50,52,"down"],[52,54,44,46,"down"],[46,48,40,42,"down"],
+        [42,46,40,44],[44,48,42,46],[46,52,44,50],[50,54,48,52]],
+      ann:[{t:"zone",top:44,bot:36,cls:"z-ob-bull",label:"HTF zone"},
+           {t:"level",price:48,label:"last LH",cls:"lvl"},
+           {t:"tag",i:5,price:52,text:"break, no gap",cls:"tag-sell",tip:"Overlapping candles grind through the high. No displacement, no FVG, nothing to enter on."}]},
+    "em-m5-noise":{candles:[[56,58,48,50,"down"],[50,62,49,60],[60,62,44,46,"down"],[46,58,45,56],
+        [56,58,40,42,"down"],[42,44,36,38,"down"],[38,56,37,54],[54,70,52,68]],
+      ann:[{t:"zone",top:52,bot:34,cls:"z-ob-bull",label:"one HTF zone"},
+           {t:"tag",i:1,price:62,text:"fail",cls:"tag-sell"},
+           {t:"tag",i:3,price:58,text:"fail",cls:"tag-sell"},
+           {t:"tag",i:6,price:56,text:"the real one",cls:"tag-buy",tip:"Several textbook M5 setups fire inside the zone before the actual reversal."}]},
+    "em-m15-clean":{candles:[[56,58,46,48,"down"],[48,62,44,46,"down"],[46,58,40,42,"down"],
+        [42,44,36,38,"down"],[38,64,37,62],[62,68,54,58,"down"],[58,60,50,56,"down"]],
+      ann:[{t:"zone",top:44,bot:34,cls:"z-ob-bull",label:"same HTF zone"},
+           {t:"level",price:58,label:"last LH",cls:"lvl"},
+           {t:"zone",top:54,bot:44,cls:"z-fvg-bull",label:"FVG",i0:3,i1:6,tip:"The failed M5 triggers are just wicks here — one break, one gap, one entry."},
+           {t:"tag",i:4,price:64,text:"one MSB",cls:"tag-buy"},
+           {t:"tag",i:6,price:50,text:"entry",cls:"tag-buy",pos:"below"},
+           {t:"level",price:36,label:"stop (M15 low)",cls:"lvl"}]},
+    "em-stop-reversal":{candles:[[50,52,44,46,"down"],[46,56,45,54],[54,56,40,42,"down"],[42,52,41,50],
+        [50,52,36,38,"down"],[38,54,37,52],[52,66,50,64]],
+      ann:[{t:"zone",top:48,bot:32,cls:"z-ob-bull",label:"H4 POI = the real invalidation"},
+           {t:"level",price:30,label:"stop — beyond the zone",cls:"lvl"},
+           {t:"tag",i:2,price:40,text:"stopped",cls:"tag-sell",pos:"below"},
+           {t:"tag",i:4,price:36,text:"stopped again",cls:"tag-sell",pos:"below"},
+           {t:"tag",i:5,price:54,text:"holds",cls:"tag-buy",tip:"Timing a reversal takes multiple attempts inside the zone — an LTF stop gets picked off."}]},
+    "em-stop-cont":{candles:[[46,64,45,62],[62,66,52,54,"down"],[54,56,48,50,"down"],[50,52,46,48,"down"],
+        [48,66,47,64],[64,70,56,66],[66,68,54,58,"down"]],
+      ann:[{t:"zone",top:56,bot:52,cls:"z-fvg-bull",label:"FVG",i0:3,i1:6},
+           {t:"level",price:44,label:"stop — under the LTF low",cls:"lvl"},
+           {t:"tag",i:0,price:64,text:"HTF turned",cls:"tag-buy",tip:"The HTF has already shifted, so the LTF swing is a genuine invalidation."},
+           {t:"tag",i:6,price:54,text:"entry",cls:"tag-buy",pos:"below"}]},
+    "em-silver-bullet":{candles:[[40,44,33,36,"down"],[36,40,32,38],[38,40,29,34,"down"],[34,52,33,50],
+        [50,60,48,58],[58,62,50,52,"down"],[52,54,43,47,"down"]],
+      ann:[{t:"level",price:32,label:"equal lows / SSL",cls:"lvl"},
+           {t:"bracket",i0:0,i1:6,price:64,label:"10:00–11:00 a.m. New York"},
+           {t:"tag",i:2,price:29,text:"sweep",cls:"tag-buy",pos:"below"},
+           {t:"tag",i:3,price:57.4,text:"MSS + displacement",cls:"tag-buy"},
+           {t:"zone",top:48,bot:40,cls:"z-fvg-bull",label:"FVG = entry",i0:2,i1:6,tip:"Sweep, shift, gap, reverse — the same model, inside the window."}]},
+/* ---- §10 stops, targets & RR ---------------------------------------- */
+    "rk-stop-invalid":{candles:[[70,72,58,60,"down"],[60,62,48,50,"down"],[50,52,35,44],
+        [44,58,42,56],[56,76,54,72]],
+      ann:[{t:"zone",top:46,bot:36,cls:"z-ob-bull",label:"HTF POI",
+             tip:"The POI plus the LTF model is what validated the trade. Below it the idea is dead."},
+           {t:"level",price:28,label:"stop = invalidation",cls:"lvl"},
+           {t:"tag",i:2,price:35,text:"still valid",cls:"tag-buy",pos:"below"},
+           {t:"bracket",i0:3,i1:4,price:32,label:"wick buffer"},
+           {t:"tag",i:4,price:76,text:"reversal",cls:"tag-buy"}]},
+    "rk-stop-crowded":{candles:[[46,50,40,42,"down"],[42,46,38,40,"down"],[40,44,38,43],
+        [43,45,32,42],[42,58,41,56]],
+      ann:[{t:"level",price:38,label:"equal lows = SSL",cls:"lvl-eq"},
+           {t:"level",price:35,label:"your stop",cls:"lvl"},
+           {t:"tag",i:3,price:32,text:"swept",cls:"tag-sell",pos:"below",
+             tip:"Stops parked under obvious equal lows are the liquidity the move is hunting."},
+           {t:"tag",i:4,price:58,text:"then it rips",cls:"tag-buy"}]},
+    "rk-stop-room":{candles:[[46,50,40,42,"down"],[42,46,38,40,"down"],[40,44,38,43],
+        [43,45,32,42],[42,58,41,56]],
+      ann:[{t:"zone",top:44,bot:38,cls:"z-ob-bull",label:"OB"},
+           {t:"level",price:29,label:"stop + buffer",cls:"lvl"},
+           {t:"tag",i:3,price:32,text:"wick, not invalidation",cls:"tag-buy",pos:"below"},
+           {t:"bracket",i0:2,i1:4,price:33.5,label:"breathing room"}]},
+    "rk-targets":{candles:[[30,34,26,28,"down"],[28,30,20,29],[29,44,28,42],[42,52,40,50],
+        [50,54,44,46,"down"],[46,72,45,70]],
+      ann:[{t:"zone",top:28,bot:20,cls:"z-ob-bull",label:"entry (IRL)",i0:0,i1:1,
+             tip:"Entering at internal range liquidity means the target is external."},
+           {t:"level",price:52,label:"IRL — partials",cls:"lvl"},
+           {t:"level",price:74,label:"ERL — target",cls:"lvl"},
+           {t:"tag",i:3,price:52,text:"25–33% off",cls:"tag-buy"},
+           {t:"tag",i:5,price:73.6,text:"moon bag",cls:"tag-buy"}]},
+    "rk-rr":{candles:[[56,58,44,46,"down"],[46,48,35,43],[43,50,41,48],[48,56,46,54],[54,60,52,58]],
+      ann:[{t:"level",price:42,label:"entry",cls:"lvl"},
+           {t:"level",price:34,label:"stop",cls:"lvl"},
+           {t:"level",price:58,label:"target (ERL)",cls:"lvl"},
+           {t:"bracket",i0:0,i1:1,price:38,label:"risk = 1R"},
+           {t:"bracket",i0:2,i1:4,price:50,label:"reward = 2R"}]},
+    "rk-force":{candles:[[52,54,44,46,"down"],[46,48,35,43],[43,49,41,47],[47,48,42,43,"down"],
+        [43,44,36,38,"down"]],
+      ann:[{t:"level",price:42,label:"entry",cls:"lvl"},
+           {t:"level",price:36,label:"stop (from the chart)",cls:"lvl"},
+           {t:"level",price:48,label:"real target",cls:"lvl"},
+           {t:"level",price:54,label:"dragged TP — nothing here",cls:"lvl-eq"},
+           {t:"bracket",i0:2,i1:4,price:39,label:"risk"},
+           {t:"bracket",i0:0,i1:2,price:45,label:"reward = 1R → 1:1"},
+           {t:"tag",i:4,price:35.9,text:"back to the stop",cls:"tag-sell",pos:"below"}]},
+
+    /* ---- §11 scaling in --------------------------------------------------- */
+    "sc-allin":{candles:[[70,72,60,62,"down"],[62,64,52,54,"down"],[54,56,44,46,"down"],
+        [46,48,38,45],[45,60,44,58],[58,74,56,72]],
+      ann:[{t:"zone",top:54,bot:38,cls:"z-ob-bull",label:"HTF OB (wide zone)",
+             tip:"You never know how deep price will trade into a daily / H4 zone."},
+           {t:"level",price:30,label:"stop",cls:"lvl"},
+           {t:"tag",i:2,price:62.3,text:"full size at the top",cls:"tag-sell"},
+           {t:"bracket",i0:2,i1:5,price:34,label:"risk = 24 (54 → 30)"}]},
+    "sc-ladder":{candles:[[70,72,60,62,"down"],[62,64,52,54,"down"],[54,56,44,46,"down"],
+        [46,48,38,45],[45,60,44,58],[58,74,56,72]],
+      ann:[{t:"zone",top:54,bot:38,cls:"z-ob-bull",label:"HTF OB (wide zone)"},
+           {t:"dot",i:2,price:53,cls:"dot-buy",tip:"0.3 at the top of the zone."},
+           {t:"dot",i:3,price:45,cls:"dot-buy",tip:"0.3 in the middle."},
+           {t:"dot",i:3,price:39,cls:"dot-buy",tip:"0.4 near the far edge. Same 1 BTC total."},
+           {t:"level",price:45,label:"avg entry",cls:"lvl-eq"},
+           {t:"level",price:30,label:"stop",cls:"lvl"},
+           {t:"bracket",i0:3,i1:5,price:37,label:"risk = 15 (45 → 30)"},
+           {t:"tag",i:5,price:74,text:"same 1R, tighter",cls:"tag-buy"}]},
+    "sc-confirm":{candles:[[60,62,48,50,"down"],[50,52,40,48],[48,58,46,56],[56,58,50,52,"down"],
+        [52,68,50,66],[66,70,60,62,"down"],[62,80,60,78]],
+      ann:[{t:"zone",top:50,bot:40,cls:"z-ob-bull",label:"HTF zone",i0:0,i1:1},
+           {t:"tag",i:2,price:58.7,text:"0.3 — model 1",cls:"tag-buy",
+             tip:"MSB + FVG inside the HTF zone. The riskiest fill, so the smallest."},
+           {t:"tag",i:4,price:68,text:"+0.3 — model 2",cls:"tag-buy",
+             tip:"A second complete model: new MSB and a new FVG to retrace into."},
+           {t:"tag",i:6,price:80,text:"+0.4 — model 3",cls:"tag-buy"},
+           {t:"level",price:38,label:"stop 1",cls:"lvl"},
+           {t:"level",price:49,label:"stop 2",cls:"lvl"},
+           {t:"level",price:59,label:"stop 3",cls:"lvl"}]},
+    "sc-combo":{candles:[[64,66,54,56,"down"],[56,58,48,50,"down"],[50,52,42,44,"down"],
+        [44,54,43,52],[52,56,48,54],[54,70,52,68]],
+      ann:[{t:"zone",top:56,bot:42,cls:"z-ob-bull",label:"daily OB",i0:0,i1:3},
+           {t:"tag",i:0,price:66,text:"0.5 at top",cls:"tag-buy",
+             tip:"Guarantees exposure even if the LTF never prints a model."},
+           {t:"tag",i:3,price:43,text:"+0.25 M15 model",cls:"tag-buy",pos:"below"},
+           {t:"tag",i:5,price:70,text:"+0.25 next model",cls:"tag-buy"},
+           {t:"level",price:38,label:"one stop, unchanged",cls:"lvl"}]},
+    "sc-avgdown":{candles:[[60,62,50,52,"down"],[52,54,44,46,"down"],[46,48,38,40,"down"],
+        [40,42,30,32,"down"],[32,34,22,24,"down"]],
+      ann:[{t:"zone",top:50,bot:40,cls:"z-ob-bull",label:"OB",i0:0,i1:2},
+           {t:"level",price:38,label:"invalidation",cls:"lvl"},
+           {t:"tag",i:2,price:37.7,text:"adds",cls:"tag-sell",pos:"below"},
+           {t:"tag",i:3,price:24.7,text:"adds past the stop",cls:"tag-sell",pos:"below",
+             tip:"Risk you never budgeted. The hard stop order would have closed this already."},
+           {t:"tag",i:4,price:22,text:"no model, no life",cls:"tag-sell",pos:"below"}]},
+
+    /* ---- §12 when not to trade ------------------------------------------- */
+    "nt-nobias":{candles:[[40,52,38,44],[44,50,36,38,"down"],[38,52,36,50],[50,53,37,39,"down"],
+        [39,51,37,49],[49,52,38,40,"down"]],
+      ann:[{t:"level",price:53,label:"range high",cls:"lvl"},
+           {t:"level",price:36,label:"range low",cls:"lvl"},
+           {t:"tag",i:2,price:52.9,text:"up or down?",cls:"tag-mss",
+             tip:"If it takes an argument to name the bias, there is no bias."}]},
+    "nt-wrongzone":{candles:[[30,38,28,36],[36,50,34,48],[48,62,46,60],[60,66,54,58,"down"],
+        [58,68,56,66],[66,70,60,62,"down"]],
+      ann:[{t:"half",top:72,bot:44,cls:"z-prem",label:"PREMIUM"},
+           {t:"half",top:44,bot:24,cls:"z-disc",label:"DISCOUNT — where the long belongs"},
+           {t:"level",price:72,label:"range high",cls:"lvl"},
+           {t:"level",price:44,label:"EQ 50%",cls:"lvl-eq"},
+           {t:"level",price:24,label:"range low",cls:"lvl"},
+           {t:"tag",i:5,price:71.7,text:"long here = no trade",cls:"tag-sell"}]},
+    "nt-math":{candles:[[46,48,38,40,"down"],[40,42,34,39],[39,46,37,44],[44,50,42,48],[48,52,46,50]],
+      ann:[{t:"level",price:40,label:"entry",cls:"lvl"},
+           {t:"level",price:30,label:"stop",cls:"lvl"},
+           {t:"level",price:50,label:"only liquidity above",cls:"lvl"},
+           {t:"level",price:60,label:"2:1 would need this",cls:"lvl-eq"},
+           {t:"bracket",i0:0,i1:1,price:35,label:"risk 10 pts"},
+           {t:"bracket",i0:2,i1:4,price:45,label:"reward 10 pts = 1:1"}]},
+    "nt-model":{candles:[[58,60,48,50,"down"],[50,52,42,48],[48,60,46,58],[58,62,50,56,"down"],
+        [56,64,54,62]],
+      ann:[{t:"zone",top:52,bot:42,cls:"z-ob-bull",label:"HTF zone",i0:0,i1:1},
+           {t:"tag",i:2,price:60,text:"MSB",cls:"tag-mss"},
+           {t:"tag",i:3,price:40.2,text:"no FVG left behind",cls:"tag-sell",pos:"below",
+             tip:"No displacement gap means nothing to retrace into — the model never completed."},
+           {t:"tag",i:4,price:64,text:"entry here skips a step",cls:"tag-sell"}]},
+    "nt-chase":{candles:[[30,34,28,32],[32,52,31,50],[50,66,48,64],[64,70,60,68],[68,74,64,72]],
+      ann:[{t:"zone",top:48,bot:34,cls:"z-fvg-bull",label:"your entry — never filled",i0:0,i1:2,
+             tip:"Price left the gap and never returned. That is a missed trade, not a trade."},
+           {t:"tag",i:1,price:52,text:"displacement",cls:"tag-buy"},
+           {t:"tag",i:4,price:74,text:"chasing up here",cls:"tag-sell"}]},
+    "nt-news":{candles:[[46,48,44,47],[47,60,45,50],[50,52,34,36,"down"],[36,50,35,48],
+        [48,64,46,62],[62,76,60,74]],
+      ann:[{t:"level",price:58,label:"range high",cls:"lvl"},
+           {t:"level",price:38,label:"range low",cls:"lvl"},
+           {t:"tag",i:1,price:60,text:"runs one side",cls:"tag-sell"},
+           {t:"tag",i:2,price:34,text:"then the other",cls:"tag-sell",pos:"below"},
+           {t:"tag",i:5,price:76,text:"real move, after the dust",cls:"tag-buy"}]}
   };
 
   // ---- render -----------------------------------------------------------

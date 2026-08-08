@@ -1,6 +1,6 @@
 # Mayne SMC Indicator
 
-**Version 2.4.0** · [changelog](./CHANGELOG.md)
+**Version 2.4.1** · [changelog](./CHANGELOG.md) — indicator unchanged at v2.4
 
 A Pine Script v6 (TradingView) indicator that mechanically marks the entry pieces of the Trader
 Mayne Smart Money Concepts system: **order blocks, fair value gaps, market-structure bias, the
@@ -11,8 +11,11 @@ dealing-range 50%, and BUY/SELL signals**, with optional HTF-bias and liquidity-
   entries, stop/target brackets, per-POI-type trade IDs for the Strategy Tester. See
   [Backtesting](#backtesting-the-strategy-file).
 - **`guide.html`** — open in any browser for an interactive, illustrated walkthrough of the whole
-  Mayne SMC method (candle diagrams for every concept) plus how to read this indicator. Start there
-  if the concepts are new.
+  Mayne SMC method (60 candle diagrams across 15 sections — structure, liquidity, ranges, bias,
+  entries, AMD, entry models, risk, scaling, and the trades to skip) plus how to read this
+  indicator. Start there if the concepts are new.
+- **`make-pdf.py`** — renders `guide.html` to a print-ready A4 PDF (light theme, rules blocks
+  expanded, cover page and contents). Needs Chrome/Chromium on `PATH`.
 
 > **Not financial advice.** This is a study/testing tool. The signals are a mechanical
 > approximation of a discretionary method. Backtest before you trust anything it prints, and size

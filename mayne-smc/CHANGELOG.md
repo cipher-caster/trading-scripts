@@ -4,6 +4,36 @@ All notable changes to the indicator and its guide. Versioning is loosely
 [semantic](https://semver.org/): MAJOR for breaking changes to signals/behaviour, MINOR for new
 features or inputs, PATCH for fixes and doc/visual tweaks.
 
+## [2.4.1] — 2026-08-04
+
+Guide-only release — no Pine changes, the indicator stays v2.4.
+
+- **`guide.html` covers the whole course.** The series ran from 9 to 17 episodes; the guide only
+  knew the first 9. Six new sections: **6 · Power of three** (AMD, the Judas swing, the four
+  schematics and their anchors), **9 · Entry models** (the 5m and 15m models, the Silver Bullet
+  windows), **10 · Stops, targets & RR** (structural invalidation, position sizing, partials),
+  **11 · Scaling in** (laddering a zone vs adding on confirmation), **12 · When not to trade**
+  (the seven disqualifiers), plus an equal-highs/equal-lows treatment folded into §2. Old §§6-9
+  renumber to 7, 8, 13, 14. 17 diagrams became 60.
+- **Corrections to existing sections**, where the later episodes overrode what the guide said:
+  the stop rule is *structural invalidation*, not the zone edge (the cheat sheet's geometry is the
+  floor, not the rule); the LTF re-sync must appear on the H4/H1 *before* the execution chart;
+  stops split by reversal vs continuation; the win rate is 40-60% long-run (48% last year), not
+  "high-30s to mid-40s"; the break-even table gains the 5:1 row; equal highs are liquidity pools,
+  not automatic sweep targets; "two timeframes" is shorthand for four jobs.
+- **Diagram engine fixes** (needed by the new sections, and they change nothing for the old ones):
+  the right margin now grows to fit the longest right-edge level label instead of a fixed 74px, and
+  tag text is clamped inside the plot and clear of that label gutter. Diagrams whose labels already
+  fit render byte-identically.
+- **§14 caught up with the code**: the zone-table mock was still 4 columns (the shipped table has
+  had an **RR** column since 2.4.0) and now documents it; adds the *Require displacement on middle
+  candle*, *Only OBs whose move breaks structure* and *Sweep lookback* inputs; notes that hiding a
+  POI type removes it from the system rather than just hiding it; and lists the six alert conditions.
+- **Diagram text polish**: swept all 60 diagrams for label collisions and nudged 14 tags clear of
+  candle bodies and level lines. Zone labels still sit over candles by design.
+- The old PO3 block in Frameworks is removed — §6 supersedes it, and its Judas Swing card anchored
+  the swing to the session open rather than the open of the period being traded.
+
 ## [2.4.0] — 2026-07-26
 
 Backtesting release: the two features that put numbers on the signals.
